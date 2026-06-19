@@ -792,7 +792,7 @@ function renderSidebar(){
       const btn=document.createElement('button');
       btn.className='nav-btn';
       btn.style.fontSize='11px';
-      const sidebarNum = ph.title.match(/^Phase (\d+)/)?.[1] || ph.id.replace('p','');
+      const sidebarNum = ph.title.match(/^Phase (\d+)/)?.[1] || (pkg.phases.indexOf(ph)+1);
       const sidebarLabel = ph.title.includes(' — ') ? ph.title.split(' — ').slice(1).join(' — ') : ph.title;
       btn.innerHTML=`<span style="color:rgba(255,255,255,.5);min-width:18px;text-align:right;flex-shrink:0;font-weight:600">${sidebarNum}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:6px">${sidebarLabel}</span><span style="font-size:10px;color:rgba(255,255,255,.25);flex-shrink:0">${prog.done}/${prog.total}</span>`;
       btn.onclick=()=>{
@@ -870,7 +870,7 @@ function renderDashboard(){
     const isOpen=!!openMap[ph.id];
     const activeTab=tabMap[ph.id]||'tasks';
     const isDone=prog.pct===100;
-    const phNum = ph.title.match(/^Phase (\d+)/)?.[1] || ph.id.replace('p','');
+    const phNum = ph.title.match(/^Phase (\d+)/)?.[1] || (()=>{const idx=pkg.phases.indexOf(ph);return idx>=0?idx+1:ph.id.replace('p','')})();
 
     const card=document.createElement('div');
     card.className='phase-card';card.id='phase-'+ph.id;
@@ -1261,7 +1261,23 @@ function openEditPkg(k){
   document.getElementById('pkg-modal').classList.remove('hidden');
 }
 function closePkgModal(){document.getElementById('pkg-modal').classList.add('hidden');pkgModalData=null}
+function syncPkgModalFields(){
+  // Read any typed-but-unsaved values from the form back into the data object
+  // so they survive re-renders triggered by phase edits
+  if(!pkgModalData) return;
+  const lbl=document.getElementById('pm-label');
+  const sub=document.getElementById('pm-sub');
+  const sku=document.getElementById('pm-sku');
+  const ts=document.getElementById('pm-timescale');
+  const desc=document.getElementById('pm-desc');
+  if(lbl)pkgModalData.pkg.label=lbl.value;
+  if(sub)pkgModalData.pkg.sub=sub.value;
+  if(sku)pkgModalData.pkg.sku=sku.value;
+  if(ts)pkgModalData.pkg.timescale=ts.value;
+  if(desc)pkgModalData.pkg.description=desc.value;
+}
 function renderPkgModal(){
+  syncPkgModalFields();
   const p=pkgModalData.pkg;
   document.getElementById('pkg-modal-body').innerHTML=`
     <div class="form-row">
@@ -1304,29 +1320,28 @@ function togglePmPhase(i){
   renderPkgModal();
 }
 function addPhaseToModal(){
+  syncPkgModalFields();
   pkgModalData.pkg.phases.push({id:'ph'+Date.now(),title:'New Phase',tasks:[],ref:{sections:[],tips:[],docs:[]}});
   renderPkgModal();
   editPhaseInModal(pkgModalData.pkg.phases.length-1);
 }
 function removePhaseFromModal(i){
   if(!confirm('Remove this phase?'))return;
+  syncPkgModalFields();
   pkgModalData.pkg.phases.splice(i,1);
   renderPkgModal();
 }
 function editPhaseInModal(i){
+  syncPkgModalFields();
   phaseModalData={pkgRef:pkgModalData.pkg,phaseIdx:i,phase:JSON.parse(JSON.stringify(pkgModalData.pkg.phases[i]))};
   document.getElementById('phase-modal-title').textContent='Edit Phase '+(i+1);
   renderPhaseModal();
   document.getElementById('phase-modal').classList.remove('hidden');
 }
 function savePkgModal(){
-  const label=document.getElementById('pm-label').value.trim();
+  syncPkgModalFields();
+  const label=pkgModalData.pkg.label;
   if(!label){alert('Package name is required');return}
-  pkgModalData.pkg.label=label;
-  pkgModalData.pkg.sub=document.getElementById('pm-sub').value.trim();
-  pkgModalData.pkg.sku=document.getElementById('pm-sku').value.trim();
-  pkgModalData.pkg.timescale=document.getElementById('pm-timescale').value.trim();
-  pkgModalData.pkg.description=document.getElementById('pm-desc').value.trim();
   const key=pkgModalData.isNew?('custom_'+Date.now()):pkgModalData.key;
   ST.userPkgs[key]=pkgModalData.pkg;
   save();closePkgModal();renderAll();showToast(pkgModalData.isNew?'Package created':'Package updated');
