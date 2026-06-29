@@ -7,7 +7,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#1B3A6B;--navy2:#0f2444;--red:#C8102E;--blue:#2E6DA4;--blue-lt:#EBF2F9;
+  --navy:#326ac5;--navy2:#204e92c7;--red:#C8102E;--blue:#2E6DA4;--blue-lt:#EBF2F9;
   --green:#1A7A4A;--green-lt:#EDFAF4;
   --warn:#FFF8E7;--warn-ln:#D4860A;--crit:#FEF0EF;--crit-ln:#B91C1C;--tip-ln:#1A7A4A;
   --bg:#F4F5F7;--surface:#FFFFFF;--surface2:#F0F2F5;--surface3:#E8EBF0;
@@ -314,7 +314,13 @@ button{cursor:pointer}
       Packages
     </button>
 
-    <div class="nav-section" style="margin-top:8px">Active Package</div>
+    <div class="nav-section" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding-right:10px">
+      <span>Projects</span>
+      <button onclick="openNewProject()" title="New project" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;line-height:1;padding:0 4px">+</button>
+    </div>
+    <div id="sidebar-projects"></div>
+
+    <div class="nav-section" style="margin-top:8px">Active Project / Packages</div>
     <div id="sidebar-pkg-info" style="padding:6px 16px 8px">
       <div style="font-size:11px;color:rgba(255,255,255,.35)">None selected</div>
     </div>
@@ -395,6 +401,17 @@ button{cursor:pointer}
 </div>
 
 <!-- ── Phase Edit Modal ───────────────────────────────────── -->
+<div class="modal-overlay hidden" id="project-modal">
+  <div class="modal">
+    <div class="modal-title" id="project-modal-title">New Project</div>
+    <div id="project-modal-body"></div>
+    <div class="modal-footer" id="project-modal-footer">
+      <button class="btn" onclick="closeProjectModal()">Cancel</button>
+      <button class="btn primary" onclick="saveProjectModal()">Save Project</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="phase-modal">
   <div class="modal">
     <div class="modal-title" id="phase-modal-title">Edit Phase</div>
@@ -499,14 +516,12 @@ const BUILTIN_PKGS={"xi":{"label":"Platform & SS Xcelerate I","sub":"Quick Start
 const STORE_KEY='delinea_ps_v2';
 let ST={};
 try{ST=JSON.parse(localStorage.getItem(STORE_KEY)||'{}')}catch(e){}
-if(!ST.pkg)ST.pkg='plat';
-if(!ST.progress)ST.progress={};
-if(!ST.openPhases)ST.openPhases={};
-if(!ST.activeTabs)ST.activeTabs={};
-if(!ST.userPkgs)ST.userPkgs={};
-if(!ST.myNotes)ST.myNotes={};
-if(!ST.refOverrides)ST.refOverrides={};
-if(!ST.refEditMode)ST.refEditMode={};
+
+// ── Global (cross-project) state ──
+if(!ST.userPkgs)ST.userPkgs={};        // custom package definitions (shared across projects)
+if(!ST.projects)ST.projects={};        // projectId -> {id,customer,pkgKey,startDate,endDate,status,contacts,progress,openPhases,activeTabs,myNotes,refOverrides,refEditMode}
+if(!ST.activeProject)ST.activeProject=null;
+
 // ── One-time cleanup: remove any custom PRA package the user may have created ──
 if(!ST._cleaned_custom_pra){
   Object.keys(ST.userPkgs).forEach(k=>{
@@ -518,32 +533,89 @@ if(!ST._cleaned_custom_pra){
     }
   });
   ST._cleaned_custom_pra=true;
-  try{localStorage.setItem(STORE_KEY,JSON.stringify(ST))}catch(e){}
 }
-if(!ST.refOverrides)ST.refOverrides={};   // pkgKey_phId -> {sections,tips,docs}
-if(!ST.refEditMode)ST.refEditMode={};     // pkgKey_phId -> bool
+
+// ── One-time migration: fold any old global state into a starter project ──
+if(!ST._migrated_to_projects){
+  const hadOldData = ST.progress || ST.myNotes || ST.refOverrides || ST.pkg;
+  if(hadOldData && Object.keys(ST.projects).length===0){
+    const pid='proj_'+Date.now();
+    ST.projects[pid]={
+      id:pid,
+      customer:'My First Project',
+      pkgKey:ST.pkg||'plat',
+      startDate:'', endDate:'', status:'In progress', contacts:'',
+      progress:ST.progress||{},
+      openPhases:ST.openPhases||{},
+      activeTabs:ST.activeTabs||{},
+      myNotes:ST.myNotes||{},
+      refOverrides:ST.refOverrides||{},
+      refEditMode:{}
+    };
+    ST.activeProject=pid;
+  }
+  // Remove the old global keys now they live inside the project
+  delete ST.pkg; delete ST.progress; delete ST.openPhases;
+  delete ST.activeTabs; delete ST.myNotes; delete ST.refOverrides; delete ST.refEditMode;
+  ST._migrated_to_projects=true;
+}
+
+// ── One-time migration: single package per project → multiple packages ──
+if(!ST._migrated_multipkg){
+  Object.values(ST.projects).forEach(p=>{
+    if(!p.pkgKeys){
+      p.pkgKeys = p.pkgKey ? [p.pkgKey] : [];
+      p.activePkgKey = p.pkgKey || (p.pkgKeys[0]||null);
+    }
+    delete p.pkgKey;
+  });
+  ST._migrated_multipkg=true;
+}
+
+try{localStorage.setItem(STORE_KEY,JSON.stringify(ST))}catch(e){}
 
 const aiHistory={};
 let currentView='dashboard';
 let pkgModalData=null;
 let phaseModalData=null;
+let projectModalData=null;
+
+const STATUS_OPTIONS=['Not started','In progress','On hold','Complete'];
 
 function save(){try{localStorage.setItem(STORE_KEY,JSON.stringify(ST))}catch(e){}}
 
 function allPkgs(){return{...BUILTIN_PKGS,...ST.userPkgs}}
 function getPkg(k){return allPkgs()[k]}
-function activePkg(){return getPkg(ST.pkg)}
+
+// ── Project helpers ──
+function activeProj(){return ST.activeProject?ST.projects[ST.activeProject]:null}
+function activePkg(){const p=activeProj();if(!p)return null;ensureProjShape(p);return p.activePkgKey?getPkg(p.activePkgKey):null}
+function ensureProjShape(p){
+  if(!p.pkgKeys)p.pkgKeys=p.pkgKey?[p.pkgKey]:[];
+  if(p.pkgKey){if(!p.pkgKeys.includes(p.pkgKey))p.pkgKeys.push(p.pkgKey);delete p.pkgKey;}
+  if(!p.activePkgKey||!p.pkgKeys.includes(p.activePkgKey))p.activePkgKey=p.pkgKeys[0]||null;
+  if(!p.progress)p.progress={};
+  if(!p.openPhases)p.openPhases={};
+  if(!p.activeTabs)p.activeTabs={};
+  if(!p.myNotes)p.myNotes={};
+  if(!p.refOverrides)p.refOverrides={};
+  if(!p.refEditMode)p.refEditMode={};
+  return p;
+}
 
 function getApiKey(){return localStorage.getItem('delinea_apikey')||''}
 function setApiKey(k){localStorage.setItem('delinea_apikey',k)}
 
-function progFor(pkgKey){return ST.progress[pkgKey]||(ST.progress[pkgKey]={})}
-function openFor(pkgKey){return ST.openPhases[pkgKey]||(ST.openPhases[pkgKey]={})}
-function tabFor(pkgKey){return ST.activeTabs[pkgKey]||(ST.activeTabs[pkgKey]={})}
+// All per-package state now lives inside the active project.
+// The pkgKey argument is kept for compatibility with existing render code.
+function progFor(pkgKey){const p=activeProj();if(!p)return{};ensureProjShape(p);return p.progress[pkgKey]||(p.progress[pkgKey]={})}
+function openFor(pkgKey){const p=activeProj();if(!p)return{};ensureProjShape(p);return p.openPhases[pkgKey]||(p.openPhases[pkgKey]={})}
+function tabFor(pkgKey){const p=activeProj();if(!p)return{};ensureProjShape(p);return p.activeTabs[pkgKey]||(p.activeTabs[pkgKey]={})}
 function notesFor(pkgKey,phId){
-  if(!ST.myNotes[pkgKey])ST.myNotes[pkgKey]={};
-  if(!ST.myNotes[pkgKey][phId])ST.myNotes[pkgKey][phId]=[];
-  return ST.myNotes[pkgKey][phId];
+  const p=activeProj();if(!p)return[];ensureProjShape(p);
+  if(!p.myNotes[pkgKey])p.myNotes[pkgKey]={};
+  if(!p.myNotes[pkgKey][phId])p.myNotes[pkgKey][phId]=[];
+  return p.myNotes[pkgKey][phId];
 }
 
 function totalTasks(pkg){return pkg.phases.reduce((a,p)=>a+p.tasks.length,0)}
@@ -561,8 +633,171 @@ function phaseProg(phase,pkgKey){
 function toggle(pkgKey,phId,i){const p=progFor(pkgKey);p[phId+'_'+i]=!p[phId+'_'+i];save();renderDashboard()}
 function togglePhase(pkgKey,phId){const o=openFor(pkgKey);o[phId]=!o[phId];save();renderDashboard()}
 function setTab(pkgKey,phId,tab){const t=tabFor(pkgKey);t[phId]=tab;save();renderDashboard()}
-function setPkg(k){ST.pkg=k;save();renderAll()}
-function resetProgress(){if(!confirm('Reset all task progress for this package?'))return;ST.progress[ST.pkg]={};save();renderAll();showToast('Progress reset')}
+function setPkg(k){
+  // Switch which of the project's packages is currently being viewed
+  const p=activeProj();if(!p)return;ensureProjShape(p);
+  if(!p.pkgKeys.includes(k))p.pkgKeys.push(k);
+  p.activePkgKey=k;save();renderAll();
+}
+function resetProgress(){
+  const p=activeProj();if(!p)return;ensureProjShape(p);
+  const pk=getPkg(p.activePkgKey);
+  if(!confirm('Reset all task progress for the '+(pk?pk.label:'current')+' package in this project?'))return;
+  p.progress[p.activePkgKey]={};save();renderAll();showToast('Progress reset');
+}
+// Add a package to the current project
+function addPackageToProject(k){
+  const p=activeProj();if(!p)return;ensureProjShape(p);
+  if(!p.pkgKeys.includes(k))p.pkgKeys.push(k);
+  p.activePkgKey=k;save();renderAll();showView('dashboard');
+  showToast((getPkg(k)?.label||'Package')+' added to '+p.customer);
+}
+// Remove a package from the current project (keeps its data unless confirmed)
+function removePackageFromProject(k){
+  const p=activeProj();if(!p)return;ensureProjShape(p);
+  const pk=getPkg(k);
+  if(!confirm('Remove the '+(pk?pk.label:'')+' package from '+p.customer+'? Its progress and notes for this project will be deleted.'))return;
+  p.pkgKeys=p.pkgKeys.filter(x=>x!==k);
+  delete p.progress[k];delete p.openPhases[k];delete p.activeTabs[k];delete p.myNotes[k];
+  // clean ref overrides/editmode for that package
+  Object.keys(p.refOverrides||{}).forEach(rk=>{if(rk.startsWith(k+'__'))delete p.refOverrides[rk]});
+  Object.keys(p.refEditMode||{}).forEach(rk=>{if(rk.startsWith(k+'__'))delete p.refEditMode[rk]});
+  if(p.activePkgKey===k)p.activePkgKey=p.pkgKeys[0]||null;
+  save();renderAll();showToast('Package removed');
+}
+
+// ── Project CRUD ──
+function projProgress(proj){
+  ensureProjShape(proj);
+  let done=0,total=0;
+  (proj.pkgKeys||[]).forEach(k=>{
+    const pkg=getPkg(k);if(!pkg)return;
+    const prog=proj.progress[k]||{};
+    pkg.phases.forEach(ph=>{ph.tasks.forEach((_,i)=>{total++;if(prog[ph.id+'_'+i])done++})});
+  });
+  return{done,total,pct:total?Math.round(done/total*100):0};
+}
+// Progress for one specific package within a project
+function projPkgProgress(proj,k){
+  ensureProjShape(proj);
+  const pkg=getPkg(k);if(!pkg)return{done:0,total:0,pct:0};
+  const prog=proj.progress[k]||{};
+  let done=0,total=0;
+  pkg.phases.forEach(ph=>{ph.tasks.forEach((_,i)=>{total++;if(prog[ph.id+'_'+i])done++})});
+  return{done,total,pct:total?Math.round(done/total*100):0};
+}
+function setActiveProject(pid){
+  ST.activeProject=pid;save();
+  currentView='dashboard';
+  renderAll();
+  showView('dashboard');
+}
+function openNewProject(){
+  projectModalData={isNew:true,proj:{
+    id:'', customer:'', pkgKeys:[], startDate:'', endDate:'',
+    status:'Not started', contacts:''
+  }};
+  renderProjectModal();
+  document.getElementById('project-modal').classList.remove('hidden');
+}
+function openEditProject(pid){
+  const p=ST.projects[pid];if(!p)return;
+  projectModalData={isNew:false,proj:JSON.parse(JSON.stringify(p))};
+  renderProjectModal();
+  document.getElementById('project-modal').classList.remove('hidden');
+}
+function closeProjectModal(){document.getElementById('project-modal').classList.add('hidden');projectModalData=null}
+function renderProjectModal(){
+  const p=projectModalData.proj;
+  // normalise: support old pkgKey while editing
+  if(!p.pkgKeys)p.pkgKeys=p.pkgKey?[p.pkgKey]:[];
+  document.getElementById('project-modal-title').textContent=projectModalData.isNew?'New Project':'Edit Project — '+(p.customer||'');
+  const pkgChecks=Object.entries(allPkgs()).map(([k,v])=>{
+    const checked=p.pkgKeys.includes(k)?' checked':'';
+    return `<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:400" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'"><input type="checkbox" class="prj-pkg-cb" value="${k}"${checked} style="width:15px;height:15px;cursor:pointer"><span style="font-weight:600">${escHtml(v.label)}</span><span style="color:var(--text3);font-size:11px">${escHtml(v.sku||'')}</span></label>`;
+  }).join('');
+  const statusOpts=STATUS_OPTIONS.map(s=>`<option value="${s}"${p.status===s?' selected':''}>${s}</option>`).join('');
+  document.getElementById('project-modal-body').innerHTML=`
+    <div class="form-group"><label class="form-label">Customer / Project Name *</label><input class="form-input" id="prj-customer" value="${escHtml(p.customer)}" placeholder="e.g. Acme Corporation"></div>
+    <div class="form-group"><label class="form-label">Packages <span style="font-weight:400;color:var(--text3)">— tick all that this customer has purchased</span></label><div style="border:1px solid var(--border);border-radius:var(--radius);padding:4px;max-height:220px;overflow-y:auto">${pkgChecks}</div></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="prj-start" type="date" value="${escHtml(p.startDate)}"></div>
+      <div class="form-group"><label class="form-label">Target End Date</label><input class="form-input" id="prj-end" type="date" value="${escHtml(p.endDate)}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="prj-status">${statusOpts}</select></div>
+    <div class="form-group"><label class="form-label">Contacts / Notes</label><textarea class="form-input" id="prj-contacts" rows="4" placeholder="Customer contacts, key info, anything worth noting for this engagement">${escHtml(p.contacts)}</textarea></div>`;
+  // Footer: add Export / Delete for existing projects
+  const footer=document.getElementById('project-modal-footer');
+  if(footer){
+    if(!projectModalData.isNew){
+      const archiveBtn = p.archived
+        ? `<button class="btn" onclick="unarchiveProject('${p.id}');closeProjectModal()">Restore from archive</button>`
+        : `<button class="btn" onclick="archiveProject('${p.id}');closeProjectModal()">Archive</button>`;
+      footer.innerHTML=`
+        <button class="btn danger" style="margin-right:auto" onclick="deleteProject('${p.id}');closeProjectModal()">Delete</button>
+        ${archiveBtn}
+        <button class="btn" onclick="exportProject('${p.id}')">Export</button>
+        <button class="btn" onclick="closeProjectModal()">Cancel</button>
+        <button class="btn primary" onclick="saveProjectModal()">Save</button>`;
+    } else {
+      footer.innerHTML=`
+        <button class="btn" onclick="closeProjectModal()">Cancel</button>
+        <button class="btn primary" onclick="saveProjectModal()">Save Project</button>`;
+    }
+  }
+}
+function saveProjectModal(){
+  const customer=document.getElementById('prj-customer').value.trim();
+  if(!customer){alert('Customer / project name is required');return}
+  const p=projectModalData.proj;
+  const wasNew=projectModalData.isNew;
+  p.customer=customer;
+  const checked=Array.from(document.querySelectorAll('.prj-pkg-cb')).filter(c=>c.checked).map(c=>c.value);
+  p.pkgKeys=checked;
+  delete p.pkgKey;
+  // keep activePkgKey valid
+  if(!p.activePkgKey||!p.pkgKeys.includes(p.activePkgKey))p.activePkgKey=p.pkgKeys[0]||null;
+  p.startDate=document.getElementById('prj-start').value;
+  p.endDate=document.getElementById('prj-end').value;
+  p.status=document.getElementById('prj-status').value;
+  p.contacts=document.getElementById('prj-contacts').value;
+  if(wasNew){
+    const pid='proj_'+Date.now();
+    p.id=pid;ensureProjShape(p);
+    ST.projects[pid]=p;
+    ST.activeProject=pid;
+  } else {
+    ensureProjShape(p);
+    ST.projects[p.id]=p;
+  }
+  save();closeProjectModal();renderAll();
+  showToast(wasNew?'Project created':'Project updated');
+}
+function archiveProject(pid){
+  const p=ST.projects[pid];if(!p)return;
+  p.archived=true;
+  // If the archived project was active, switch to first non-archived project
+  if(ST.activeProject===pid){
+    const live=Object.keys(ST.projects).filter(id=>!ST.projects[id].archived);
+    ST.activeProject=live.length?live[0]:null;
+  }
+  save();renderAll();showToast('Project archived');
+}
+function unarchiveProject(pid){
+  const p=ST.projects[pid];if(!p)return;
+  p.archived=false;
+  save();renderAll();showToast('Project restored');
+}
+function deleteProject(pid){
+  const p=ST.projects[pid];if(!p)return;
+  if(!confirm(`Delete project "${p.customer}"? All its progress and notes will be lost. This cannot be undone.`))return;
+  delete ST.projects[pid];
+  if(ST.activeProject===pid){
+    const remaining=Object.keys(ST.projects);
+    ST.activeProject=remaining.length?remaining[0]:null;
+  }
+  save();renderAll();showToast('Project deleted');
+}
 
 function addNote(pkgKey,phId,text,type){
   if(!text.trim())return;
@@ -586,11 +821,12 @@ function editNote(pkgKey,phId,noteId){
 
 // ── Export / Import ──
 function exportData(){
+  // Full backup: all projects + custom packages
   const data={
-    version:2,exported:new Date().toISOString(),
-    userPkgs:ST.userPkgs,myNotes:ST.myNotes,
-    refOverrides:ST.refOverrides,
-    progress:ST.progress,activePkg:ST.pkg
+    version:3,exported:new Date().toISOString(),
+    userPkgs:ST.userPkgs,
+    projects:ST.projects,
+    activeProject:ST.activeProject
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -599,6 +835,25 @@ function exportData(){
   a.click();URL.revokeObjectURL(url);
   showToast('Backup exported');
 }
+function exportProject(pid){
+  // Export a single project
+  const pr=ST.projects[pid];if(!pr)return;
+  // include any custom packages the project depends on
+  const deps={};
+  (pr.pkgKeys||[]).forEach(k=>{if(ST.userPkgs[k])deps[k]=ST.userPkgs[k]});
+  const data={
+    version:3,type:'single-project',exported:new Date().toISOString(),
+    userPkgs:deps,
+    projects:{[pid]:pr}
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const safe=(pr.customer||'project').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+  a.href=url;a.download='delinea-'+safe+'-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(url);
+  showToast('Project exported');
+}
 function importData(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -606,9 +861,26 @@ function importData(e){
     try{
       const data=JSON.parse(ev.target.result);
       if(data.userPkgs)ST.userPkgs={...ST.userPkgs,...data.userPkgs};
-      if(data.myNotes)ST.myNotes={...ST.myNotes,...data.myNotes};
-      if(data.refOverrides)ST.refOverrides={...ST.refOverrides,...data.refOverrides};
-      if(data.progress)ST.progress={...ST.progress,...data.progress};
+      if(data.projects){
+        ST.projects={...ST.projects,...data.projects};
+        // Make sure each imported project has the right shape
+        Object.values(ST.projects).forEach(p=>ensureProjShape(p));
+        if(!ST.activeProject){
+          const ids=Object.keys(ST.projects);
+          if(ids.length)ST.activeProject=ids[0];
+        }
+      }
+      // Backwards-compat: a v2 backup with old global keys → fold into a project
+      if(data.progress||data.myNotes){
+        const pid='proj_'+Date.now();
+        ST.projects[pid]={
+          id:pid,customer:data.importedName||'Imported Project',
+          pkgKeys:[data.activePkg||'plat'],activePkgKey:data.activePkg||'plat',startDate:'',endDate:'',status:'In progress',contacts:'',
+          progress:data.progress||{},openPhases:{},activeTabs:{},
+          myNotes:data.myNotes||{},refOverrides:data.refOverrides||{},refEditMode:{}
+        };
+        if(!ST.activeProject)ST.activeProject=pid;
+      }
       save();renderAll();showToast('Backup imported successfully');
     }catch(err){alert('Could not read backup file. Make sure it is a valid Delinea PS backup.')}
   };
@@ -639,33 +911,38 @@ function showView(v){
 // ── Reference override helpers ────────────────────────────────────────────────
 function refKey(pkgKey,phId){return pkgKey+'__'+phId}
 function getRef(pkgKey,phId){
+  const p=activeProj();
   const k=refKey(pkgKey,phId);
-  if(ST.refOverrides[k])return ST.refOverrides[k];
-  const ph=getPkg(pkgKey)?.phases?.find(p=>p.id===phId);
+  if(p){ensureProjShape(p);if(p.refOverrides[k])return p.refOverrides[k];}
+  const ph=getPkg(pkgKey)?.phases?.find(x=>x.id===phId);
   return ph?.ref||{sections:[],tips:[],docs:[]};
 }
 function setRef(pkgKey,phId,ref){
-  ST.refOverrides[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ref));
+  const p=activeProj();if(!p)return;ensureProjShape(p);
+  p.refOverrides[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ref));
   save();
 }
 function resetRef(pkgKey,phId){
-  delete ST.refOverrides[refKey(pkgKey,phId)];
+  const p=activeProj();if(!p)return;ensureProjShape(p);
+  delete p.refOverrides[refKey(pkgKey,phId)];
   save();
 }
-function isRefEditing(pkgKey,phId){return !!ST.refEditMode[refKey(pkgKey,phId)]}
+function isRefEditing(pkgKey,phId){const p=activeProj();if(!p)return false;ensureProjShape(p);return !!p.refEditMode[refKey(pkgKey,phId)]}
 function setRefEditing(pkgKey,phId,val){
-  ST.refEditMode[refKey(pkgKey,phId)]=val;
+  const p=activeProj();if(!p)return;ensureProjShape(p);
+  p.refEditMode[refKey(pkgKey,phId)]=val;
   // When entering edit mode, snapshot current ref into overrides so edits are isolated
-  if(val&&!ST.refOverrides[refKey(pkgKey,phId)]){
-    const ph=getPkg(pkgKey)?.phases?.find(p=>p.id===phId);
-    if(ph?.ref)ST.refOverrides[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ph.ref));
+  if(val&&!p.refOverrides[refKey(pkgKey,phId)]){
+    const ph=getPkg(pkgKey)?.phases?.find(x=>x.id===phId);
+    if(ph?.ref)p.refOverrides[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ph.ref));
   }
   save();
 }
 // Save current edit form state before re-render
 function saveRefEditState(pkgKey,phId){
+  const p=activeProj();if(!p)return;ensureProjShape(p);
   const k=refKey(pkgKey,phId);
-  const ref=ST.refOverrides[k];
+  const ref=p.refOverrides[k];
   if(!ref)return;
   // Read section labels + items
   ref.sections.forEach((sec,si)=>{
@@ -795,26 +1072,115 @@ function renderAll(){
 }
 
 function renderSidebar(){
+  const proj=activeProj();
   const pkg=activePkg();
-  // pkg info
-  const info=document.getElementById('sidebar-pkg-info');
-  if(pkg){
-    info.innerHTML=`<div style="font-size:12px;font-weight:600;color:#fff">${pkg.label}</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:1px">${pkg.timescale}</div>`;
+
+  // ── Projects list (active = non-archived) ──
+  const projWrap=document.getElementById('sidebar-projects');
+  projWrap.innerHTML='';
+  const allIds=Object.keys(ST.projects);
+  const liveIds=allIds.filter(id=>!ST.projects[id].archived);
+  const archivedIds=allIds.filter(id=>ST.projects[id].archived);
+  const STATUS_DOT={'Not started':'#8A90A0','In progress':'#2E6DA4','On hold':'#D4860A','Complete':'#1A7A4A'};
+
+  function pkgSummary(pr){
+    if(!pr.pkgKeys||!pr.pkgKeys.length)return'No packages';
+    const names=pr.pkgKeys.map(k=>getPkg(k)).filter(Boolean).map(p=>p.label);
+    if(names.length===1)return names[0];
+    return names.length+' packages';
   }
-  // phase links
+  function projRow(pid,archived){
+    const pr=ST.projects[pid];
+    const isActive=ST.activeProject===pid;
+    const prog=projProgress(pr);
+    const dot=STATUS_DOT[pr.status]||'#8A90A0';
+    const btn=document.createElement('button');
+    btn.className='nav-btn'+(isActive?' active':'');
+    btn.style.cssText='flex-direction:column;align-items:stretch;gap:2px;padding-top:7px;padding-bottom:7px'+(archived?';opacity:.6':'');
+    btn.innerHTML=`
+      <div style="display:flex;align-items:center;gap:6px;width:100%">
+        <span style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${escHtml(pr.customer)}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.3);flex-shrink:0">${prog.pct}%</span>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,.35);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:13px">${escHtml(pkgSummary(pr))}${archived?' · archived':''}</div>`;
+    btn.onclick=()=>setActiveProject(pid);
+    return btn;
+  }
+
+  if(liveIds.length===0 && archivedIds.length===0){
+    projWrap.innerHTML=`<div style="padding:4px 16px 8px;font-size:11px;color:rgba(255,255,255,.3)">No projects yet. Click + to create one.</div>`;
+  } else {
+    liveIds.sort((a,b)=>(ST.projects[a].customer||'').localeCompare(ST.projects[b].customer||''));
+    liveIds.forEach(pid=>projWrap.appendChild(projRow(pid,false)));
+    if(liveIds.length===0){
+      const none=document.createElement('div');
+      none.style.cssText='padding:4px 16px 6px;font-size:11px;color:rgba(255,255,255,.3)';
+      none.textContent='No active projects.';
+      projWrap.appendChild(none);
+    }
+
+    // Archived section (collapsible)
+    if(archivedIds.length){
+      archivedIds.sort((a,b)=>(ST.projects[a].customer||'').localeCompare(ST.projects[b].customer||''));
+      const head=document.createElement('button');
+      head.className='nav-btn';
+      head.style.cssText='font-size:10.5px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-top:6px';
+      head.innerHTML=`<span style="flex:1;text-align:left">▸ Archived (${archivedIds.length})</span>`;
+      let open=!!ST._archivedOpen;
+      const setArrow=()=>{head.querySelector('span').textContent=(open?'▾':'▸')+' Archived ('+archivedIds.length+')'};
+      setArrow();
+      const box=document.createElement('div');
+      box.style.display=open?'block':'none';
+      archivedIds.forEach(pid=>box.appendChild(projRow(pid,true)));
+      head.onclick=()=>{open=!open;ST._archivedOpen=open;box.style.display=open?'block':'none';setArrow();save()};
+      projWrap.appendChild(head);
+      projWrap.appendChild(box);
+    }
+  }
+
+  // ── Active project / package info ──
+  const info=document.getElementById('sidebar-pkg-info');
+  if(proj){
+    let pkgsHtml='';
+    if(proj.pkgKeys&&proj.pkgKeys.length){
+      pkgsHtml=proj.pkgKeys.map(k=>{
+        const pk=getPkg(k);if(!pk)return'';
+        const pr=projPkgProgress(proj,k);
+        const isActive=proj.activePkgKey===k;
+        return `<button class="nav-btn" style="padding:5px 8px;font-size:11px;border-radius:6px;${isActive?'background:rgba(255,255,255,.12);color:#fff;font-weight:600':'color:rgba(255,255,255,.6)'}" onclick="setPkg('${k}')"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(pk.label)}</span><span style="font-size:9px;color:rgba(255,255,255,.3)">${pr.pct}%</span></button>`;
+      }).join('');
+    } else {
+      pkgsHtml=`<div style="font-size:10px;color:rgba(255,255,255,.3);padding:2px 8px">No packages yet</div>`;
+    }
+    const archiveAction = proj.archived
+      ? `<button class="nav-btn" style="padding:5px 8px;font-size:10px;color:rgba(255,255,255,.45);margin-top:2px" onclick="unarchiveProject('${proj.id}')">⤴ Restore from archive</button>`
+      : `<button class="nav-btn" style="padding:5px 8px;font-size:10px;color:rgba(255,255,255,.45);margin-top:2px" onclick="archiveProject('${proj.id}')">📦 Archive this project</button>`;
+    const archivedBadge = proj.archived ? ` <span style="font-size:9px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:1px 5px;border-radius:3px">ARCHIVED</span>` : '';
+    info.innerHTML=`
+      <div style="font-size:12px;font-weight:600;color:#fff">${escHtml(proj.customer)}${archivedBadge}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:1px;margin-bottom:6px">${proj.status||''}</div>
+      ${pkgsHtml}
+      <button class="nav-btn" style="padding:5px 8px;font-size:10px;color:rgba(255,255,255,.45);margin-top:2px" onclick="openEditProject('${proj.id}')">+ Add / manage packages</button>
+      ${archiveAction}`;
+  } else {
+    info.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.35)">No project selected</div>`;
+  }
+
+  // ── Phase links (for the active package) ──
   const sp=document.getElementById('sidebar-phases');
   sp.innerHTML='';
-  if(pkg){
+  if(proj&&pkg){
     pkg.phases.forEach(ph=>{
-      const prog=phaseProg(ph,ST.pkg);
+      const prog=phaseProg(ph,proj.activePkgKey);
       const btn=document.createElement('button');
       btn.className='nav-btn';
-      btn.style.fontSize='11px';
+      btn.style.fontSize='12px';
       const sidebarNum = ph.title.match(/^Phase (\d+)/)?.[1] || (pkg.phases.indexOf(ph)+1);
       const sidebarLabel = ph.title.includes(' — ') ? ph.title.split(' — ').slice(1).join(' — ') : ph.title;
       btn.innerHTML=`<span style="color:rgba(255,255,255,.5);min-width:18px;text-align:right;flex-shrink:0;font-weight:600">${sidebarNum}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:6px">${sidebarLabel}</span><span style="font-size:10px;color:rgba(255,255,255,.25);flex-shrink:0">${prog.done}/${prog.total}</span>`;
       btn.onclick=()=>{
-        const o=openFor(ST.pkg);o[ph.id]=true;save();
+        const o=openFor(proj.activePkgKey);o[ph.id]=true;save();
         renderDashboard();
         showView('dashboard');
         setTimeout(()=>document.getElementById('phase-'+ph.id)?.scrollIntoView({behavior:'smooth',block:'start'}),80);
@@ -825,32 +1191,47 @@ function renderSidebar(){
 }
 
 function renderDashboard(){
+  const proj=activeProj();
   const pkg=activePkg();
-  const pkgKey=ST.pkg;
+  const pkgKey=proj?proj.activePkgKey:null;
+
+  // ── No project selected: show welcome / empty state ──
+  if(!proj){
+    document.getElementById('tb-title').textContent='Deployment Dashboard';
+    document.getElementById('tb-sub').textContent='Create a project to get started';
+    document.getElementById('prog-fill').style.width='0%';
+    document.getElementById('prog-pct').textContent='0%';
+    document.getElementById('pkg-selector').innerHTML='';
+    document.getElementById('stats-grid').innerHTML='';
+    document.getElementById('phase-list').innerHTML=`<div class="empty-state"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="6" y="9" width="32" height="26" rx="4" stroke="currentColor" stroke-width="2"/><path d="M6 15h32M14 4v6M30 4v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><div style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text)">No project selected</div>Create a project for each customer engagement to track its package, progress, and notes separately.<div style="margin-top:14px"><button class="btn primary" onclick="openNewProject()">+ New Project</button></div></div>`;
+    return;
+  }
 
   // Topbar
   if(pkg){
-    document.getElementById('tb-title').textContent=pkg.label+' — '+pkg.sub;
+    document.getElementById('tb-title').textContent=proj.customer+' — '+pkg.label;
     const total=totalTasks(pkg),done=doneTasks(pkg,pkgKey);
     const pct=total?Math.round(done/total*100):0;
-    document.getElementById('tb-sub').textContent=pkg.timescale+' · '+pkg.phases.length+' phases · '+total+' tasks';
+    const statusBadge=proj.status?' · '+proj.status:'';
+    document.getElementById('tb-sub').textContent=pkg.timescale+' · '+pkg.phases.length+' phases · '+total+' tasks'+statusBadge;
     document.getElementById('prog-fill').style.width=pct+'%';
     document.getElementById('prog-pct').textContent=pct+'%';
   } else {
-    document.getElementById('tb-title').textContent='Deployment Dashboard';
-    document.getElementById('tb-sub').textContent='Select a package to get started';
+    document.getElementById('tb-title').textContent=proj.customer;
+    document.getElementById('tb-sub').textContent='No package assigned — edit project to choose one';
     document.getElementById('prog-fill').style.width='0%';
     document.getElementById('prog-pct').textContent='0%';
   }
 
-  // Package selector strip
+  // Package selector strip — shows only the packages in THIS project
   const ps=document.getElementById('pkg-selector');
-  const pkgKeys=Object.keys(allPkgs());
+  const pkgKeys=(proj.pkgKeys||[]).slice();
   ps.innerHTML='';
   const strip=document.createElement('div');
-  strip.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-bottom:4px';
+  strip.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-bottom:4px;align-items:center';
   pkgKeys.forEach(k=>{
     const p=allPkgs()[k];
+    if(!p)return;
     const btn=document.createElement('button');
     const PKG_COLORS={
       xi:'#0F6E56',xii:'#185FA5',plat:'#534AB7',
@@ -885,7 +1266,20 @@ function renderDashboard(){
     btn.onclick=()=>setPkg(k);
     strip.appendChild(btn);
   });
+  // + Add package chip
+  const addBtn=document.createElement('button');
+  addBtn.style.cssText='display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px dashed var(--border);background:var(--surface);cursor:pointer;font-size:12px;font-weight:500;color:var(--text3);transition:all .12s';
+  addBtn.innerHTML='<span style="font-size:14px;line-height:1">+</span> Add package';
+  addBtn.onclick=()=>openEditProject(proj.id);
+  strip.appendChild(addBtn);
   ps.appendChild(strip);
+
+  // If project has no packages yet, prompt
+  if(pkgKeys.length===0){
+    document.getElementById('stats-grid').innerHTML='';
+    document.getElementById('phase-list').innerHTML=`<div class="empty-state"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="5" y="5" width="30" height="30" rx="6" stroke="currentColor" stroke-width="2"/><path d="M13 20h14M20 13v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>No packages in this project yet. Click "Add package" above to choose what this customer has purchased.</div>`;
+    return;
+  }
 
   if(!pkg){
     document.getElementById('stats-grid').innerHTML='';
@@ -1039,7 +1433,7 @@ function renderDashboard(){
           editToggle.style.cssText='font-size:10px;padding:2px 8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:none;color:var(--text3);cursor:pointer';
           editToggle.textContent='✏ Edit reference';
           editToggle.onclick=()=>{setRefEditing(pkgKey,ph.id,true);renderDashboard()};
-          const hasOverride=!!ST.refOverrides[refKey(pkgKey,ph.id)];
+          const hasOverride=(()=>{const _p=activeProj();return _p&&_p.refOverrides&&!!_p.refOverrides[refKey(pkgKey,ph.id)]})();
           if(hasOverride){
             const badge=document.createElement('span');
             badge.style.cssText='font-size:9px;margin-left:5px;padding:1px 5px;background:var(--blue-lt);color:var(--navy);border-radius:10px;font-weight:600';
@@ -1243,21 +1637,26 @@ function renderPackageManager(){
     const colors={xi:'#0F6E56',xii:'#185FA5',plat:'#534AB7'};
     const bgs={xi:'#E0F2F1',xii:'#E6F1FB',plat:'#EEEDFE'};
     const col=colors[k]||'#444';const bg=bgs[k]||'#eee';
-    html+=`<div class="pkg-card${ST.pkg===k?' editing':''}">
+    const _ap=activeProj();
+    const _inProj=_ap&&_ap.pkgKeys&&_ap.pkgKeys.includes(k);
+    html+=`<div class="pkg-card${_inProj?' editing':''}">
       <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;background:${bg};color:${col}">${p.label}</span>
       <div class="pkg-name-big" style="margin-top:6px">${p.label}</div>
       <div class="pkg-sub-sm">${p.sub}</div>
       <div class="pkg-sku">${p.sku}</div>
       <div style="font-size:10px;color:var(--text3);margin-top:4px">${p.phases.length} phases · ${totalTasks(p)} tasks · Built-in</div>
       <div class="pkg-card-actions">
-        <button class="btn sm" onclick="setPkg('${k}');showView('dashboard')">Use this package</button>
+        <button class="btn sm" onclick="usePackage('${k}')">${_inProj?'In current project ✓':'Add to current project'}</button>
+        <button class="btn sm primary" onclick="newProjectWithPkg('${k}')">New project</button>
       </div>
     </div>`;
   });
 
   // Custom packages
   Object.entries(ST.userPkgs).forEach(([k,p])=>{
-    html+=`<div class="pkg-card${ST.pkg===k?' editing':''}">
+    const _ap2=activeProj();
+    const _inProj2=_ap2&&_ap2.pkgKeys&&_ap2.pkgKeys.includes(k);
+    html+=`<div class="pkg-card${_inProj2?' editing':''}">
       <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;background:var(--surface2);color:var(--text2)">CUSTOM</span>
       <div class="pkg-name-big" style="margin-top:6px">${p.label}</div>
       <div class="pkg-sub-sm">${p.sub||''}</div>
@@ -1265,7 +1664,7 @@ function renderPackageManager(){
       <div style="font-size:10px;color:var(--text3);margin-top:4px">${p.phases.length} phases · ${totalTasks(p)} tasks</div>
       <div class="pkg-card-actions">
         <button class="btn sm" onclick="openEditPkg('${k}')">Edit</button>
-        <button class="btn sm" onclick="setPkg('${k}');showView('dashboard')">Use</button>
+        <button class="btn sm" onclick="usePackage('${k}')">Use</button>
         <button class="btn sm danger" onclick="deletePkg('${k}')">Delete</button>
       </div>
     </div>`;
@@ -1285,8 +1684,38 @@ function deletePkg(k){
   if(!ST.userPkgs[k])return;
   if(!confirm(`Delete "${ST.userPkgs[k].label}"? This cannot be undone.`))return;
   delete ST.userPkgs[k];
-  if(ST.pkg===k)ST.pkg='plat';
+  // Remove this package from any project that uses it
+  Object.values(ST.projects).forEach(pr=>{
+    if(pr.pkgKeys&&pr.pkgKeys.includes(k)){
+      pr.pkgKeys=pr.pkgKeys.filter(x=>x!==k);
+      if(pr.activePkgKey===k)pr.activePkgKey=pr.pkgKeys[0]||null;
+      if(pr.progress)delete pr.progress[k];
+    }
+  });
   save();renderAll();showToast('Package deleted');
+}
+function usePackage(k){
+  const p=activeProj();
+  if(!p){
+    // No active project — start a new one with this package preselected
+    newProjectWithPkg(k);
+    return;
+  }
+  ensureProjShape(p);
+  if(p.pkgKeys.includes(k)){
+    p.activePkgKey=k;save();renderAll();showView('dashboard');
+    showToast(getPkg(k).label+' is already in '+p.customer);
+    return;
+  }
+  addPackageToProject(k);
+}
+function newProjectWithPkg(k){
+  projectModalData={isNew:true,proj:{
+    id:'', customer:'', pkgKeys:k?[k]:[], startDate:'', endDate:'',
+    status:'Not started', contacts:''
+  }};
+  renderProjectModal();
+  document.getElementById('project-modal').classList.remove('hidden');
 }
 
 // ── Package Modal ──
