@@ -7,7 +7,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#1B3A6B;--navy2:#0f2444b7;--red:#C8102E;--blue:#2E6DA4;--blue-lt:#EBF2F9;
+  --navy:#1B3A6B;--navy2:#0f2444b2;--red:#C8102E;--blue:#2E6DA4;--blue-lt:#EBF2F9;
   --green:#1A7A4A;--green-lt:#EDFAF4;
   --warn:#FFF8E7;--warn-ln:#D4860A;--crit:#FEF0EF;--crit-ln:#B91C1C;--tip-ln:#1A7A4A;
   --bg:#F4F5F7;--surface:#FFFFFF;--surface2:#F0F2F5;--surface3:#E8EBF0;
@@ -24,13 +24,14 @@
   /* ────────────────────────────────────────────────────────────── */
   --fs-logo:        15px;  /* DELINEA logo */
   --fs-logo-sub:    10px;  /* logo subtitle */
-  --fs-sb-heading:  14px;  /* sidebar section headings: VIEWS, PROJECTS, PHASES */
-  --fs-sb-body:     13px;  /* sidebar buttons + project / customer names */
-  --fs-sb-small:    11px;  /* sidebar sub-labels: package names, %, status */
+  --fs-sb-heading:  12px;  /* sidebar section headings: VIEWS, PROJECTS, PHASES */
+  --fs-sb-project:  13.5px;/* project (customer) names in sidebar */
+  --fs-sb-body:     12px;  /* sidebar buttons + package / phase names */
+  --fs-sb-small:    10px;  /* sidebar sub-labels: package names, %, status */
   --fs-sb-footer:   10px;  /* sidebar footer text */
 
   --fs-tb-title:    14px;  /* top bar title */
-  --fs-tb-sub:      12px;  /* top bar subtitle */
+  --fs-tb-sub:      11px;  /* top bar subtitle */
 
   --fs-main-heading:13px;  /* phase / section titles in main area */
   --fs-main-body:   12.5px;/* task text, body copy */
@@ -74,7 +75,7 @@ button{cursor:pointer}
 .sidebar-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
 .logo-mark{font-size:var(--fs-logo);font-weight:700;color:#fff;letter-spacing:.06em}
 .logo-sub{font-size:var(--fs-logo-sub);color:rgba(255,255,255,.35);margin-top:1px}
-.nav-section{font-size:var(--fs-sb-heading);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:12px 16px 4px}
+.nav-section{font-size:var(--fs-sb-heading);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255, 255, 255, 0.63);padding:12px 16px 4px}
 .nav-btn{
   display:flex;align-items:center;gap:8px;width:100%;text-align:left;
   padding:8px 16px;background:none;border:none;font-size:var(--fs-sb-body);font-weight:500;
@@ -326,6 +327,10 @@ button{cursor:pointer}
   </div>
   <div style="flex:1;overflow-y:auto">
     <div class="nav-section">Views</div>
+    <button class="nav-btn" id="nav-overview" onclick="showView('overview')">
+      <svg class="nb-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12M2 8h12M2 13h12" stroke-linecap="round"/><circle cx="5" cy="3" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="8" r="1.4" fill="currentColor" stroke="none"/><circle cx="6" cy="13" r="1.4" fill="currentColor" stroke="none"/></svg>
+      Overview
+    </button>
     <button class="nav-btn active" id="nav-dashboard" onclick="showView('dashboard')">
       <svg class="nb-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
       Dashboard
@@ -340,18 +345,10 @@ button{cursor:pointer}
     </button>
 
     <div class="nav-section" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding-right:10px">
-      <span>Projects</span>
+      <span>Active Projects</span>
       <button onclick="openNewProject()" title="New project" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;line-height:1;padding:0 4px">+</button>
     </div>
     <div id="sidebar-projects"></div>
-
-    <div class="nav-section" style="margin-top:8px">Active Projects & Packages</div>
-    <div id="sidebar-pkg-info" style="padding:6px 16px 8px">
-      <div style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.35)">None selected</div>
-    </div>
-
-    <div class="nav-section">Phases</div>
-    <div id="sidebar-phases"></div>
 
     <div class="nav-section" style="margin-top:8px">Data</div>
     <button class="nav-btn" onclick="exportData()">
@@ -377,6 +374,7 @@ button{cursor:pointer}
 <div class="main">
   <header class="topbar">
     <div class="tb-left">
+      <div class="tb-crumb" id="tb-crumb" style="font-size:var(--fs-tb-sub);color:var(--text3);margin-bottom:2px;display:none"></div>
       <div class="tb-title" id="tb-title">Deployment Dashboard</div>
       <div class="tb-sub"   id="tb-sub">Select a package to get started</div>
     </div>
@@ -392,6 +390,17 @@ button{cursor:pointer}
   <main class="content">
 
     <!-- Dashboard view -->
+    <div class="view" id="view-overview">
+      <div class="editor-header">
+        <div>
+          <div class="editor-title">Portfolio Overview</div>
+          <div class="editor-sub">A summary of your active engagements. Click any project to open it.</div>
+        </div>
+        <button class="btn sm primary" onclick="openNewProject()">+ New Project</button>
+      </div>
+      <div id="overview-content"></div>
+    </div>
+
     <div class="view active" id="view-dashboard">
       <div id="pkg-selector" style="margin-bottom:18px"></div>
       <div class="stats-grid" id="stats-grid"></div>
@@ -1085,6 +1094,132 @@ function prereqRemoveBullet(si,bi){const d=getPrereqs();d.sections[si].bullets.s
 function prereqAddSection(){const d=getPrereqs();d.sections.push({id:'sec_'+Date.now(),title:'New Section',intro:'',bullets:[],tables:[],docs:[]});savePrereqs(d);renderPrereqs()}
 function prereqRemoveSection(si){if(!confirm('Remove this whole section?'))return;const d=getPrereqs();d.sections.splice(si,1);savePrereqs(d);renderPrereqs()}
 
+// ════════════════════════════════════════════════════════════════════════════
+// PORTFOLIO OVERVIEW
+// ════════════════════════════════════════════════════════════════════════════
+function overviewFlags(pr){
+  // Returns array of {label, kind} attention flags for a project
+  const flags=[];
+  const prog=projProgress(pr);
+  // Overdue: has a target end date in the past and not complete
+  if(pr.endDate && pr.status!=='Complete'){
+    const end=new Date(pr.endDate+'T23:59:59');
+    if(!isNaN(end) && end < new Date()) flags.push({label:'Overdue',kind:'crit'});
+  }
+  // Stalled: marked In progress but 0% done
+  if(pr.status==='In progress' && prog.total>0 && prog.done===0){
+    flags.push({label:'Not started yet',kind:'warn'});
+  }
+  // On hold is its own group, but flag it too for visibility if it has progress
+  return flags;
+}
+
+function renderOverview(){
+  const wrap=document.getElementById('overview-content');
+  const allIds=Object.keys(ST.projects);
+  const liveIds=allIds.filter(id=>!ST.projects[id].archived);
+  const archivedCount=allIds.length-liveIds.length;
+
+  if(liveIds.length===0){
+    wrap.innerHTML=`<div class="empty-state"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="6" y="9" width="32" height="26" rx="4" stroke="currentColor" stroke-width="2"/><path d="M6 15h32M14 4v6M30 4v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><div style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text)">No active projects</div>Create a project for each customer engagement to see it summarised here.<div style="margin-top:14px"><button class="btn primary" onclick="openNewProject()">+ New Project</button></div>${archivedCount?`<div style="margin-top:14px;font-size:12px"><a href="#" onclick="showArchivedInSidebar();return false" style="color:var(--navy)">${archivedCount} archived project${archivedCount>1?'s':''}</a></div>`:''}</div>`;
+    return;
+  }
+
+  // ── Summary strip ──
+  let totalDone=0,totalTasks=0,pkgCount=0,onHold=0,overdue=0;
+  liveIds.forEach(id=>{
+    const pr=ST.projects[id];
+    const prg=projProgress(pr);
+    totalDone+=prg.done;totalTasks+=prg.total;
+    pkgCount+=(pr.pkgKeys||[]).length;
+    if(pr.status==='On hold')onHold++;
+    if(overviewFlags(pr).some(f=>f.label==='Overdue'))overdue++;
+  });
+  const overallPct=totalTasks?Math.round(totalDone/totalTasks*100):0;
+
+  let html='';
+  html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px">`;
+  const stat=(n,l,accent)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px"><div style="font-size:var(--fs-stat-num);font-weight:700;line-height:1;color:${accent||'var(--text)'}">${n}</div><div style="font-size:var(--fs-main-small);color:var(--text3);margin-top:4px">${l}</div></div>`;
+  html+=stat(liveIds.length,'Active projects');
+  html+=stat(pkgCount,'Packages in flight');
+  html+=stat(overallPct+'%','Overall completion');
+  html+=stat(onHold, 'On hold', onHold?'var(--warn-ln)':null);
+  if(overdue)html+=stat(overdue,'Overdue','var(--crit-ln)');
+  html+=`</div>`;
+
+  // ── Grouped by status ──
+  const STATUS_DOT={'Not started':'#8A90A0','In progress':'#2E6DA4','On hold':'#D4860A','Complete':'#1A7A4A'};
+  const order=['In progress','Not started','On hold','Complete'];
+
+  function fmtDate(d){
+    if(!d)return'';
+    const dt=new Date(d+'T00:00:00');if(isNaN(dt))return'';
+    return dt.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+  }
+
+  function projRow(id){
+    const pr=ST.projects[id];
+    const prog=projProgress(pr);
+    const flags=overviewFlags(pr);
+    const pkgs=(pr.pkgKeys||[]).map(k=>getPkg(k)).filter(Boolean).map(p=>p.label);
+    const pkgLabel=pkgs.length===0?'No packages':(pkgs.length===1?pkgs[0]:pkgs.length+' packages');
+    const flagHtml=flags.map(f=>{
+      const c=f.kind==='crit'?'background:var(--crit);color:var(--crit-ln)':'background:var(--warn);color:var(--warn-ln)';
+      return `<span style="font-size:var(--fs-main-small);padding:2px 8px;border-radius:20px;${c};font-weight:600;white-space:nowrap">${f.label}</span>`;
+    }).join(' ');
+    return `<button onclick="setActiveProject('${id}')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:all .12s" onmouseover="this.style.borderColor='var(--border2)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${STATUS_DOT[pr.status]||'#8A90A0'};flex-shrink:0"></span>
+        <span style="font-weight:600;font-size:var(--fs-main-heading);color:var(--text);flex:1">${escHtml(pr.customer)}</span>
+        ${flagHtml}
+        ${pr.endDate?`<span style="font-size:var(--fs-main-small);color:var(--text3);white-space:nowrap">due ${fmtDate(pr.endDate)}</span>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:var(--fs-main-small);color:var(--text3);flex-shrink:0;min-width:90px">${escHtml(pkgLabel)}</span>
+        <div style="flex:1;height:6px;background:var(--surface3);border-radius:20px;overflow:hidden"><div style="height:100%;width:${prog.pct}%;background:var(--navy);border-radius:20px"></div></div>
+        <span style="font-size:var(--fs-main-small);color:var(--text2);font-weight:600;min-width:34px;text-align:right">${prog.pct}%</span>
+      </div>
+    </button>`;
+  }
+
+  order.forEach(status=>{
+    const ids=liveIds.filter(id=>ST.projects[id].status===status);
+    if(ids.length===0)return;
+    // sort by end date (soonest first), then customer
+    ids.sort((a,b)=>{
+      const ea=ST.projects[a].endDate||'', eb=ST.projects[b].endDate||'';
+      if(ea&&eb&&ea!==eb)return ea<eb?-1:1;
+      if(ea&&!eb)return -1; if(!ea&&eb)return 1;
+      return (ST.projects[a].customer||'').localeCompare(ST.projects[b].customer||'');
+    });
+    const collapsed = status==='Complete';
+    html+=`<div style="margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${STATUS_DOT[status]}"></span>
+        <span style="font-size:var(--fs-main-heading);font-weight:700;color:var(--text)">${status}</span>
+        <span style="font-size:var(--fs-main-small);color:var(--text3)">${ids.length}</span>
+      </div>`;
+    if(collapsed){
+      html+=`<details><summary style="cursor:pointer;font-size:var(--fs-main-small);color:var(--text3);margin-bottom:8px">Show completed projects</summary>`;
+      ids.forEach(id=>html+=projRow(id));
+      html+=`</details>`;
+    } else {
+      ids.forEach(id=>html+=projRow(id));
+    }
+    html+=`</div>`;
+  });
+
+  if(archivedCount){
+    html+=`<div style="font-size:var(--fs-main-small);color:var(--text3);margin-top:8px">${archivedCount} archived project${archivedCount>1?'s':''} (in the sidebar).</div>`;
+  }
+
+  wrap.innerHTML=html;
+}
+
+function showArchivedInSidebar(){
+  ST._archivedOpen=true;save();renderSidebar();
+}
+
 function showView(v){
   currentView=v;
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
@@ -1093,6 +1228,10 @@ function showView(v){
   const nb=document.getElementById('nav-'+v);if(nb)nb.classList.add('active');
   if(v==='packages')renderPackageManager();
   if(v==='prereqs')renderPrereqs();
+  if(v==='overview')renderOverview();
+  // Breadcrumb only makes sense on the project dashboard
+  const crumb=document.getElementById('tb-crumb');
+  if(crumb&&v!=='dashboard')crumb.style.display='none';
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1259,13 +1398,12 @@ function renderAll(){
   renderSidebar();
   renderDashboard();
   if(currentView==='packages')renderPackageManager();
+  if(currentView==='prereqs')renderPrereqs();
+  if(currentView==='overview')renderOverview();
 }
 
 function renderSidebar(){
   const proj=activeProj();
-  const pkg=activePkg();
-
-  // ── Projects list (active = non-archived) ──
   const projWrap=document.getElementById('sidebar-projects');
   projWrap.innerHTML='';
   const allIds=Object.keys(ST.projects);
@@ -1276,107 +1414,133 @@ function renderSidebar(){
   function pkgSummary(pr){
     if(!pr.pkgKeys||!pr.pkgKeys.length)return'No packages';
     const names=pr.pkgKeys.map(k=>getPkg(k)).filter(Boolean).map(p=>p.label);
-    if(names.length===1)return names[0];
-    return names.length+' packages';
+    return names.length===1?names[0]:names.length+' packages';
   }
-  function projRow(pid,archived){
+
+  // Build the phase list nested under the active package
+  function phaseNodes(pr,pkg){
+    const frag=document.createDocumentFragment();
+    pkg.phases.forEach(ph=>{
+      const prog=phaseProg(ph,pr.activePkgKey);
+      const btn=document.createElement('button');
+      btn.className='nav-btn';
+      btn.style.cssText='font-size:var(--fs-sb-body);padding-left:44px;padding-top:4px;padding-bottom:4px';
+      const num = ph.title.match(/^Phase (\d+)/)?.[1] || (pkg.phases.indexOf(ph)+1);
+      const label = ph.title.includes(' — ') ? ph.title.split(' — ').slice(1).join(' — ') : ph.title;
+      btn.innerHTML=`<span style="color:rgba(255,255,255,.45);min-width:16px;text-align:right;flex-shrink:0;font-weight:600">${num}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:6px">${escHtml(label)}</span><span style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.25);flex-shrink:0">${prog.done}/${prog.total}</span>`;
+      btn.onclick=(e)=>{
+        e.stopPropagation();
+        const o=openFor(pr.activePkgKey);o[ph.id]=true;save();
+        renderDashboard();showView('dashboard');
+        setTimeout(()=>document.getElementById('phase-'+ph.id)?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+      };
+      frag.appendChild(btn);
+    });
+    return frag;
+  }
+
+  // Build the package list nested under an active project
+  function packageNodes(pr){
+    const frag=document.createDocumentFragment();
+    if(pr.pkgKeys&&pr.pkgKeys.length){
+      pr.pkgKeys.forEach(k=>{
+        const pk=getPkg(k);if(!pk)return;
+        const pp=projPkgProgress(pr,k);
+        const isActivePkg=pr.activePkgKey===k;
+        const pbtn=document.createElement('button');
+        pbtn.className='nav-btn';
+        pbtn.style.cssText=`padding-left:26px;padding-top:5px;padding-bottom:5px;font-size:var(--fs-sb-body);border-radius:6px;${isActivePkg?'background:rgba(255,255,255,.10);color:#fff;font-weight:600':'color:rgba(255,255,255,.6)'}`;
+        pbtn.innerHTML=`<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(pk.label)}</span><span style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.3);flex-shrink:0">${pp.pct}%</span>`;
+        pbtn.onclick=(e)=>{e.stopPropagation();setPkg(k)};
+        frag.appendChild(pbtn);
+        // Phases nested under the active package
+        if(isActivePkg){
+          frag.appendChild(phaseNodes(pr,pk));
+        }
+      });
+    } else {
+      const none=document.createElement('div');
+      none.style.cssText='font-size:var(--fs-sb-small);color:rgba(255,255,255,.3);padding:3px 8px 3px 26px';
+      none.textContent='No packages yet';
+      frag.appendChild(none);
+    }
+    // Manage packages + archive actions
+    const manage=document.createElement('button');
+    manage.className='nav-btn';
+    manage.style.cssText='padding-left:26px;padding-top:5px;padding-bottom:5px;font-size:var(--fs-sb-small);color:rgba(255,255,255,.45)';
+    manage.innerHTML='+ Add / manage packages';
+    manage.onclick=(e)=>{e.stopPropagation();openEditProject(pr.id)};
+    frag.appendChild(manage);
+
+    const arch=document.createElement('button');
+    arch.className='nav-btn';
+    arch.style.cssText='padding-left:26px;padding-top:5px;padding-bottom:5px;font-size:var(--fs-sb-small);color:rgba(255,255,255,.45)';
+    arch.innerHTML = pr.archived ? '⤴ Restore from archive' : '📦 Archive this project';
+    arch.onclick=(e)=>{e.stopPropagation(); pr.archived?unarchiveProject(pr.id):archiveProject(pr.id)};
+    frag.appendChild(arch);
+    return frag;
+  }
+
+  // A full project node: the row, and if active, its nested packages+phases
+  function projNode(pid,archived){
     const pr=ST.projects[pid];
     const isActive=ST.activeProject===pid;
     const prog=projProgress(pr);
     const dot=STATUS_DOT[pr.status]||'#8A90A0';
+    const wrap=document.createElement('div');
+
     const btn=document.createElement('button');
     btn.className='nav-btn'+(isActive?' active':'');
     btn.style.cssText='flex-direction:column;align-items:stretch;gap:2px;padding-top:7px;padding-bottom:7px'+(archived?';opacity:.6':'');
+    const caret=isActive?'▾':'▸';
+    const nameColor=isActive?'#fff':'rgba(255,255,255,.82)';
     btn.innerHTML=`
       <div style="display:flex;align-items:center;gap:6px;width:100%">
+        <span style="color:rgba(255,255,255,.4);flex-shrink:0;font-size:9px">${caret}</span>
         <span style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></span>
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${escHtml(pr.customer)}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:var(--fs-sb-project);letter-spacing:.01em;color:${nameColor}">${escHtml(pr.customer)}</span>
         <span style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.3);flex-shrink:0">${prog.pct}%</span>
       </div>
-      <div style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.35);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:13px">${escHtml(pkgSummary(pr))}${archived?' · archived':''}</div>`;
-    btn.onclick=()=>setActiveProject(pid);
-    return btn;
+      <div style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.35);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:19px">${escHtml(pkgSummary(pr))}${archived?' · archived':''}</div>`;
+    btn.onclick=()=>{
+      if(isActive){ showView('dashboard'); }   // already active: just go to its dashboard
+      else { setActiveProject(pid); }
+    };
+    wrap.appendChild(btn);
+
+    // Nested packages+phases when active
+    if(isActive){
+      const nest=document.createElement('div');
+      nest.style.cssText='margin:2px 0 6px';
+      nest.appendChild(packageNodes(pr));
+      wrap.appendChild(nest);
+    }
+    return wrap;
   }
 
   if(liveIds.length===0 && archivedIds.length===0){
     projWrap.innerHTML=`<div style="padding:4px 16px 8px;font-size:var(--fs-sb-small);color:rgba(255,255,255,.3)">No projects yet. Click + to create one.</div>`;
-  } else {
-    liveIds.sort((a,b)=>(ST.projects[a].customer||'').localeCompare(ST.projects[b].customer||''));
-    liveIds.forEach(pid=>projWrap.appendChild(projRow(pid,false)));
-    if(liveIds.length===0){
-      const none=document.createElement('div');
-      none.style.cssText='padding:4px 16px 6px;font-size:var(--fs-sb-small);color:rgba(255,255,255,.3)';
-      none.textContent='No active projects.';
-      projWrap.appendChild(none);
-    }
-
-    // Archived section (collapsible)
-    if(archivedIds.length){
-      archivedIds.sort((a,b)=>(ST.projects[a].customer||'').localeCompare(ST.projects[b].customer||''));
-      const head=document.createElement('button');
-      head.className='nav-btn';
-      head.style.cssText='font-size:var(--fs-sb-heading);color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-top:6px';
-      head.innerHTML=`<span style="flex:1;text-align:left">▸ Archived (${archivedIds.length})</span>`;
-      let open=!!ST._archivedOpen;
-      const setArrow=()=>{head.querySelector('span').textContent=(open?'▾':'▸')+' Archived ('+archivedIds.length+')'};
-      setArrow();
-      const box=document.createElement('div');
-      box.style.display=open?'block':'none';
-      archivedIds.forEach(pid=>box.appendChild(projRow(pid,true)));
-      head.onclick=()=>{open=!open;ST._archivedOpen=open;box.style.display=open?'block':'none';setArrow();save()};
-      projWrap.appendChild(head);
-      projWrap.appendChild(box);
-    }
+    return;
   }
 
-  // ── Active project / package info ──
-  const info=document.getElementById('sidebar-pkg-info');
-  if(proj){
-    let pkgsHtml='';
-    if(proj.pkgKeys&&proj.pkgKeys.length){
-      pkgsHtml=proj.pkgKeys.map(k=>{
-        const pk=getPkg(k);if(!pk)return'';
-        const pr=projPkgProgress(proj,k);
-        const isActive=proj.activePkgKey===k;
-        return `<button class="nav-btn" style="padding:5px 8px;font-size:var(--fs-sb-body);border-radius:6px;${isActive?'background:rgba(255,255,255,.12);color:#fff;font-weight:600':'color:rgba(255,255,255,.6)'}" onclick="setPkg('${k}')"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(pk.label)}</span><span style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.3)">${pr.pct}%</span></button>`;
-      }).join('');
-    } else {
-      pkgsHtml=`<div style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.3);padding:2px 8px">No packages yet</div>`;
-    }
-    const archiveAction = proj.archived
-      ? `<button class="nav-btn" style="padding:5px 8px;font-size:var(--fs-sb-small);color:rgba(255,255,255,.45);margin-top:2px" onclick="unarchiveProject('${proj.id}')">⤴ Restore from archive</button>`
-      : `<button class="nav-btn" style="padding:5px 8px;font-size:var(--fs-sb-small);color:rgba(255,255,255,.45);margin-top:2px" onclick="archiveProject('${proj.id}')">📦 Archive this project</button>`;
-    const archivedBadge = proj.archived ? ` <span style="font-size:var(--fs-sb-small);background:rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:1px 5px;border-radius:3px">ARCHIVED</span>` : '';
-    info.innerHTML=`
-      <div style="font-size:var(--fs-sb-body);font-weight:600;color:#fff">${escHtml(proj.customer)}${archivedBadge}</div>
-      <div style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.35);margin-top:1px;margin-bottom:6px">${proj.status||''}</div>
-      ${pkgsHtml}
-      <button class="nav-btn" style="padding:5px 8px;font-size:var(--fs-sb-small);color:rgba(255,255,255,.45);margin-top:2px" onclick="openEditProject('${proj.id}')">+ Add / manage packages</button>
-      ${archiveAction}`;
-  } else {
-    info.innerHTML=`<div style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.35)">No project selected</div>`;
-  }
+  liveIds.sort((a,b)=>(ST.projects[a].customer||'').localeCompare(ST.projects[b].customer||''));
+  liveIds.forEach(pid=>projWrap.appendChild(projNode(pid,false)));
 
-  // ── Phase links (for the active package) ──
-  const sp=document.getElementById('sidebar-phases');
-  sp.innerHTML='';
-  if(proj&&pkg){
-    pkg.phases.forEach(ph=>{
-      const prog=phaseProg(ph,proj.activePkgKey);
-      const btn=document.createElement('button');
-      btn.className='nav-btn';
-      btn.style.fontSize='var(--fs-sb-body)';
-      const sidebarNum = ph.title.match(/^Phase (\d+)/)?.[1] || (pkg.phases.indexOf(ph)+1);
-      const sidebarLabel = ph.title.includes(' — ') ? ph.title.split(' — ').slice(1).join(' — ') : ph.title;
-      btn.innerHTML=`<span style="color:rgba(255,255,255,.5);min-width:18px;text-align:right;flex-shrink:0;font-weight:600">${sidebarNum}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:6px">${sidebarLabel}</span><span style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.25);flex-shrink:0">${prog.done}/${prog.total}</span>`;
-      btn.onclick=()=>{
-        const o=openFor(proj.activePkgKey);o[ph.id]=true;save();
-        renderDashboard();
-        showView('dashboard');
-        setTimeout(()=>document.getElementById('phase-'+ph.id)?.scrollIntoView({behavior:'smooth',block:'start'}),80);
-      };
-      sp.appendChild(btn);
-    });
+  // Archived (collapsible)
+  if(archivedIds.length){
+    archivedIds.sort((a,b)=>(ST.projects[a].customer||'').localeCompare(ST.projects[b].customer||''));
+    const head=document.createElement('button');
+    head.className='nav-btn';
+    head.style.cssText='font-size:var(--fs-sb-heading);color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-top:6px';
+    let open=!!ST._archivedOpen;
+    const setArrow=()=>{head.querySelector('span').textContent=(open?'▾':'▸')+' Archived ('+archivedIds.length+')'};
+    head.innerHTML=`<span style="flex:1;text-align:left"></span>`;setArrow();
+    const box=document.createElement('div');
+    box.style.display=open?'block':'none';
+    archivedIds.forEach(pid=>box.appendChild(projNode(pid,true)));
+    head.onclick=()=>{open=!open;ST._archivedOpen=open;box.style.display=open?'block':'none';setArrow();save()};
+    projWrap.appendChild(head);
+    projWrap.appendChild(box);
   }
 }
 
@@ -1387,6 +1551,7 @@ function renderDashboard(){
 
   // ── No project selected: show welcome / empty state ──
   if(!proj){
+    document.getElementById('tb-crumb').style.display='none';
     document.getElementById('tb-title').textContent='Deployment Dashboard';
     document.getElementById('tb-sub').textContent='Create a project to get started';
     document.getElementById('prog-fill').style.width='0%';
@@ -1396,6 +1561,15 @@ function renderDashboard(){
     document.getElementById('phase-list').innerHTML=`<div class="empty-state"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="6" y="9" width="32" height="26" rx="4" stroke="currentColor" stroke-width="2"/><path d="M6 15h32M14 4v6M30 4v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><div style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text)">No project selected</div>Create a project for each customer engagement to track its package, progress, and notes separately.<div style="margin-top:14px"><button class="btn primary" onclick="openNewProject()">+ New Project</button></div></div>`;
     return;
   }
+
+  // Breadcrumb: Overview › Customer › Package
+  const crumb=document.getElementById('tb-crumb');
+  crumb.style.display='block';
+  const sep=' <span style="opacity:.5">›</span> ';
+  let crumbHtml=`<a href="#" onclick="showView('overview');return false" style="color:var(--text3)">Overview</a>`;
+  crumbHtml+=sep+`<span style="color:var(--text2)">${escHtml(proj.customer)}</span>`;
+  if(pkg)crumbHtml+=sep+`<span style="color:var(--text2)">${escHtml(pkg.label)}</span>`;
+  crumb.innerHTML=crumbHtml;
 
   // Topbar
   if(pkg){
@@ -2157,6 +2331,8 @@ function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 // ── Init ──
 renderAll();
 applyTheme(getTheme());
+// Land on the Overview when there's no active project selected
+if(!activeProj())showView('overview');
 
 // ── Theme ──
 function getTheme(){return localStorage.getItem('delinea_theme')||'auto'}
