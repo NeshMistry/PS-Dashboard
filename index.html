@@ -167,6 +167,8 @@ button{cursor:pointer}
 .ref-link-btn{width:18px;height:18px;flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--text3);padding:1px;border-radius:3px;display:flex;align-items:center;justify-content:center;transition:all .15s;align-self:flex-start;margin-top:2px;opacity:0}
 .task-row:hover .ref-link-btn{opacity:1}
 .ref-link-btn:hover{background:var(--blue-lt);color:var(--navy)}
+.ko-link-btn{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;background:var(--blue-lt);border:1px solid #0891B2;cursor:pointer;color:#0891B2;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;transition:all .15s;align-self:flex-start;margin-top:1px;white-space:nowrap}
+.ko-link-btn:hover{background:#0891B2;color:#fff}
 .ref-section.hl-flash{animation:hl-flash .8s ease-out}
 @keyframes hl-flash{0%{background:var(--blue-lt);border-radius:var(--radius)}100%{background:transparent}}
 
@@ -258,6 +260,30 @@ textarea.ko-input{resize:vertical;line-height:1.5}
 .ko-mini.danger{color:var(--crit-ln)}
 .ko-eopts{width:100%;margin-top:8px;font-size:12px;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:inherit;resize:vertical}
 .ko-eopts:focus{outline:none;border-color:var(--navy)}
+/* ── Project Summary ── */
+.sum-pos{display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:var(--text2);background:var(--blue-lt);border:1px solid var(--border);border-radius:var(--radius-lg);padding:11px 14px;margin-bottom:16px}
+.sum-pos-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.sum-pos strong{color:var(--text);font-weight:700}
+.sum-pos-pkg{font-weight:700;color:var(--link-fg)}
+.sum-pos-sep{color:var(--text3)}
+.sum-done-tag{background:var(--green-lt);color:var(--tip-fg);font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid var(--tip-ln)}
+.sum-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 15px;margin-bottom:20px}
+.sum-lbl{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:8px}
+.sum-hint{font-weight:400;color:var(--text3)}
+.sum-current{width:100%;font-size:13px;line-height:1.55;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-family:inherit;resize:vertical}
+.sum-current:focus{outline:none;border-color:var(--navy)}
+.sum-logbtn{margin-top:10px}
+.sum-log-hd{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.sum-empty{font-size:12.5px;color:var(--text3);padding:16px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius)}
+.sum-log{display:flex;flex-direction:column;gap:10px}
+.sum-entry{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--navy);border-radius:var(--radius);padding:11px 13px}
+.sum-entry-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.sum-date{font-size:12px;font-weight:700;color:var(--text)}
+.sum-stamp{font-size:10.5px;color:var(--text2);background:var(--surface2);padding:2px 8px;border-radius:20px;border:1px solid var(--border)}
+.sum-del{margin-left:auto;width:24px;height:24px;flex-shrink:0;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text3);cursor:pointer;font-size:11px;opacity:0;transition:all .12s}
+.sum-entry:hover .sum-del{opacity:1}
+.sum-del:hover{color:var(--crit-ln);border-color:var(--crit-ln)}
+.sum-entry-text{font-size:12.5px;line-height:1.55;color:var(--text2)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden}
 .section-hdr{display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--surface2);border-bottom:1px solid var(--border)}
@@ -575,6 +601,7 @@ try{localStorage.setItem(STORE_KEY,JSON.stringify(ST))}catch(e){}
 let currentView='dashboard';
 let kickoffMode=false;   // when true, dashboard shows the per-project Kickoff panel
 let kickoffEdit=false;   // when true, Kickoff questions can be edited/reordered/deleted
+let summaryMode=false;   // when true, dashboard shows the per-project Summary panel
 let pkgModalData=null;
 let phaseModalData=null;
 let projectModalData=null;
@@ -609,6 +636,7 @@ function ensureProjShape(p){
   if(!p.refEditMode)p.refEditMode={};
   if(!p.prereqChecks)p.prereqChecks={};
   if(p.kickoff===undefined)p.kickoff=null;   // null = not yet seeded; seeded lazily from template
+  if(p.summary===undefined)p.summary=null;   // {current, log[]} — seeded lazily
   return p;
 }
 
@@ -643,7 +671,7 @@ function setTab(pkgKey,phId,tab){const t=tabFor(pkgKey);t[phId]=tab;save();rende
 function setPkg(k){
   // Switch which of the project's packages is currently being viewed
   const p=activeProj();if(!p)return;ensureProjShape(p);
-  kickoffMode=false;
+  kickoffMode=false;summaryMode=false;
   if(!p.pkgKeys.includes(k))p.pkgKeys.push(k);
   p.activePkgKey=k;save();renderAll();
 }
@@ -656,7 +684,7 @@ function resetProgress(){
 // Add a package to the current project
 function addPackageToProject(k){
   const p=activeProj();if(!p)return;ensureProjShape(p);
-  kickoffMode=false;
+  kickoffMode=false;summaryMode=false;
   if(!p.pkgKeys.includes(k))p.pkgKeys.push(k);
   p.activePkgKey=k;save();renderAll();showView('dashboard');
   showToast((getPkg(k)?.label||'Package')+' added to '+p.customer);
@@ -814,6 +842,106 @@ function renderKickoffPanel(proj){
   document.getElementById('phase-list').innerHTML=h;
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// PROJECT SUMMARY  — per-project living status + dated progress log
+// ════════════════════════════════════════════════════════════════════════════
+function getSummary(proj){
+  ensureProjShape(proj);
+  if(!proj.summary||typeof proj.summary!=='object')proj.summary={current:'',log:[]};
+  if(typeof proj.summary.current!=='string')proj.summary.current='';
+  if(!Array.isArray(proj.summary.log))proj.summary.log=[];
+  return proj.summary;
+}
+// Work out which phase we're currently in for a package (first not-fully-done phase, else last)
+function currentPhaseInfo(proj,k){
+  const pkg=getPkg(k);if(!pkg||!pkg.phases||!pkg.phases.length)return null;
+  const prog=proj.progress[k]||{};
+  let idx=pkg.phases.findIndex(ph=>ph.tasks.filter((_,ti)=>prog[ph.id+'_'+ti]).length<ph.tasks.length);
+  const allDone=idx<0;
+  if(idx<0)idx=pkg.phases.length-1;
+  const ph=pkg.phases[idx];
+  const d=ph.tasks.filter((_,ti)=>prog[ph.id+'_'+ti]).length;
+  const phasePct=ph.tasks.length?Math.round(d/ph.tasks.length*100):0;
+  const label=ph.title.includes(' — ')?ph.title.split(' — ').slice(1).join(' — '):ph.title;
+  return {idx:idx+1,total:pkg.phases.length,label,phasePct,overall:projPkgProgress(proj,k).pct,allDone,pkgLabel:pkg.label,pkgKey:k};
+}
+// Phase position for EVERY package in the project (used by the summary)
+function allPhaseInfo(proj){return (proj.pkgKeys||[]).map(k=>currentPhaseInfo(proj,k)).filter(Boolean)}
+function sumPosRow(info){
+  return '<span class="sum-pos-pkg">'+escHtml(info.pkgLabel)+'</span><span class="sum-pos-sep">·</span>Phase '+info.idx+' of '+info.total+' — <strong>'+escHtml(info.label)+'</strong><span class="sum-pos-sep">·</span>'+info.overall+'% overall'+(info.allDone?' <span class="sum-done-tag">Complete</span>':'');
+}
+function sumSetCurrent(v){const p=activeProj();if(p){getSummary(p).current=v;save()}}
+function sumLogUpdate(){
+  const p=activeProj();if(!p)return;const sm=getSummary(p);
+  const txt=(sm.current||'').trim();
+  if(!txt){showToast('Write a current status first, then log it');return}
+  const infos=allPhaseInfo(p);
+  const now=new Date();
+  sm.log.unshift({
+    id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    ts:now.getTime(),
+    date:now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+    text:txt,
+    stamps:infos.map(i=>({pkgLabel:i.pkgLabel,idx:i.idx,total:i.total,label:i.label,overall:i.overall,allDone:i.allDone}))
+  });
+  save();renderDashboard();showToast('Logged — snapshot added to the progress log');
+}
+function sumDelEntry(id){const p=activeProj();if(!p)return;const sm=getSummary(p);sm.log=sm.log.filter(e=>e.id!==id);save();renderDashboard()}
+function sumCopy(){
+  const p=activeProj();if(!p)return;const sm=getSummary(p);
+  const infos=allPhaseInfo(p);
+  let out='PROJECT SUMMARY — '+p.customer+'\n'+'='.repeat(48)+'\n\n';
+  if(infos.length){out+='Current position:\n';infos.forEach(i=>out+='  • '+i.pkgLabel+' · Phase '+i.idx+' of '+i.total+' ('+i.label+') · '+i.overall+'% overall'+(i.allDone?' [complete]':'')+'\n');out+='\n';}
+  out+='CURRENT STATUS\n'+(sm.current||'—')+'\n\n';
+  if(sm.log.length){
+    out+='PROGRESS LOG\n'+'-'.repeat(24)+'\n';
+    sm.log.forEach(e=>{
+      const stamps=e.stamps||(e.stamp?[e.stamp]:[]);
+      out+='\n['+e.date+']\n';
+      stamps.forEach(st=>out+='  '+st.pkgLabel+' · Phase '+st.idx+'/'+st.total+' '+st.label+' · '+st.overall+'%\n');
+      out+=e.text+'\n';
+    });
+  }
+  const done=()=>showToast('Summary copied to clipboard');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(out).then(done).catch(()=>koCopyFallback(out,done));
+  else koCopyFallback(out,done);
+}
+function renderSummaryPanel(proj){
+  const sm=getSummary(proj);
+  document.getElementById('stats-grid').innerHTML='';
+  const infos=allPhaseInfo(proj);
+  let posHtml;
+  if(infos.length){
+    posHtml=infos.map(info=>'<div class="sum-pos-row">'+sumPosRow(info)+'</div>').join('');
+  } else {
+    posHtml='<div class="sum-pos-row"><span style="color:var(--text3)">No packages yet — add a package to auto-track phase position.</span></div>';
+  }
+  let h='<div class="ko-head"><div>'
+    +'<div class="ko-title">Project Summary</div>'
+    +'<div class="ko-sub">A running record for '+escHtml(proj.customer)+' — review at the start of each call. Keep the current status current, then “Log this update” to snapshot it (with the phase &amp; % below) into the history.</div>'
+    +'</div><div class="ko-actions"><button class="btn sm" onclick="sumCopy()">⧉ Copy summary</button></div></div>';
+  h+='<div class="sum-pos">'+posHtml+'</div>';
+  h+='<div class="sum-block"><div class="sum-lbl">Current status <span class="sum-hint">— where we are right now (auto-saved)</span></div>'
+    +'<textarea class="sum-current" rows="5" placeholder="e.g. SAML federation configured and tested. Waiting on the customer to supply the signing cert for the second domain. Next call: configure OIDC and begin the DE install." oninput="sumSetCurrent(this.value)">'+escHtml(sm.current||'')+'</textarea>'
+    +'<button class="btn sm primary sum-logbtn" onclick="sumLogUpdate()">↧ Log this update</button></div>';
+  h+='<div class="sum-log-hd">Progress log <span class="sum-hint">— '+sm.log.length+' entr'+(sm.log.length===1?'y':'ies')+'</span></div>';
+  if(!sm.log.length){
+    h+='<div class="sum-empty">No entries yet. Update the current status above and click “Log this update” to start the trail.</div>';
+  } else {
+    h+='<div class="sum-log">';
+    sm.log.forEach(e=>{
+      const stamps=e.stamps||(e.stamp?[e.stamp]:[]);
+      const stampHtml=stamps.map(st=>'<span class="sum-stamp">'+escHtml(st.pkgLabel||'')+' · Phase '+st.idx+'/'+st.total+' · '+escHtml(st.label)+' · '+st.overall+'%</span>').join('');
+      h+='<div class="sum-entry"><div class="sum-entry-top"><span class="sum-date">'+escHtml(e.date)+'</span>'
+        +stampHtml
+        +'<button class="sum-del" title="Delete entry" onclick="sumDelEntry(\''+e.id+'\')">✕</button></div>'
+        +'<div class="sum-entry-text">'+escHtml(e.text).replace(/\n/g,'<br>')+'</div></div>';
+    });
+    h+='</div>';
+  }
+  document.getElementById('phase-list').innerHTML=h;
+}
+
 // ── Project CRUD ──
 function projProgress(proj){
   ensureProjShape(proj);
@@ -837,7 +965,7 @@ function projPkgProgress(proj,k){
 function setActiveProject(pid){
   ST.activeProject=pid;save();
   currentView='dashboard';
-  kickoffMode=false;kickoffEdit=false;
+  kickoffMode=false;kickoffEdit=false;summaryMode=false;
   renderAll();
   showView('dashboard');
 }
@@ -929,7 +1057,7 @@ function archiveProject(pid){
   if(ST.activeProject===pid){
     const live=Object.keys(ST.projects).filter(id=>!ST.projects[id].archived);
     ST.activeProject=live.length?live[0]:null;
-    kickoffMode=false;kickoffEdit=false;
+    kickoffMode=false;kickoffEdit=false;summaryMode=false;
   }
   save();renderAll();showToast('Project archived');
 }
@@ -945,7 +1073,7 @@ function deleteProject(pid){
   if(ST.activeProject===pid){
     const live=Object.keys(ST.projects).filter(id=>!ST.projects[id].archived);
     ST.activeProject=live.length?live[0]:(Object.keys(ST.projects)[0]||null);
-    kickoffMode=false;kickoffEdit=false;
+    kickoffMode=false;kickoffEdit=false;summaryMode=false;
   }
   save();renderAll();showToast('Project deleted');
 }
@@ -1492,6 +1620,13 @@ function jumpToRef(pkgKey, phId, taskText) {
   }
 }
 
+// Task → Kickoff jump: any task mentioning the kickoff call gets a shortcut to the Kickoff panel
+function isKickoffTask(t){return /kick[\s-]?off/i.test(t||'')}
+function jumpToKickoff(){
+  kickoffMode=true;kickoffEdit=false;renderDashboard();
+  setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),60);
+}
+
 function renderAll(){
   renderSidebar();
   renderDashboard();
@@ -1691,6 +1826,19 @@ function renderDashboard(){
   ps.innerHTML='';
   const strip=document.createElement('div');
   strip.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-bottom:4px;align-items:center';
+  // Project-level tools sit FIRST — Kickoff (pre-project) then Summary (ongoing)
+  const koBtn=document.createElement('button');
+  const koCol='#0891B2';
+  koBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${kickoffMode?koCol:'var(--border)'};background:${kickoffMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${kickoffMode?'600':'400'};color:${kickoffMode?koCol:'var(--text2)'};transition:all .12s`;
+  koBtn.innerHTML='<span style="font-size:13px;line-height:1">📞</span> Kickoff';
+  koBtn.onclick=()=>{kickoffMode=true;summaryMode=false;kickoffEdit=false;renderDashboard()};
+  strip.appendChild(koBtn);
+  const sumBtn=document.createElement('button');
+  const sumCol='#7C3AED';
+  sumBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${summaryMode?sumCol:'var(--border)'};background:${summaryMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${summaryMode?'600':'400'};color:${summaryMode?sumCol:'var(--text2)'};transition:all .12s`;
+  sumBtn.innerHTML='<span style="font-size:13px;line-height:1">📝</span> Summary';
+  sumBtn.onclick=()=>{summaryMode=true;kickoffMode=false;renderDashboard()};
+  strip.appendChild(sumBtn);
   pkgKeys.forEach(k=>{
     const p=allPkgs()[k];
     if(!p)return;
@@ -1723,19 +1871,12 @@ function renderDashboard(){
       advisory:'ADV',enablement:'ENBL'
     };
     const col=PKG_COLORS[k]||'#555';const bg=PKG_BGS[k]||'#f5f5f5';
-    const active=(pkgKey===k)&&!kickoffMode;
+    const active=(pkgKey===k)&&!kickoffMode&&!summaryMode;
     btn.style.cssText=`display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${active?col:'var(--border)'};background:${active?bg:'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${active?'600':'400'};color:${active?col:'var(--text2)'};transition:all .12s`;
     btn.innerHTML=`<span style="font-size:10px;font-weight:700;padding:1px 5px;background:${bg};color:${col};border-radius:3px">${escHtml(PKG_ABBR[k]||p.label.slice(0,4).toUpperCase())}</span>${escHtml(p.label)}`;
     btn.onclick=()=>setPkg(k);
     strip.appendChild(btn);
   });
-  // 📞 Kickoff chip (project-level, sits with the packages)
-  const koBtn=document.createElement('button');
-  const koCol='#0891B2';
-  koBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${kickoffMode?koCol:'var(--border)'};background:${kickoffMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${kickoffMode?'600':'400'};color:${kickoffMode?koCol:'var(--text2)'};transition:all .12s`;
-  koBtn.innerHTML='<span style="font-size:13px;line-height:1">📞</span> Kickoff';
-  koBtn.onclick=()=>{kickoffMode=true;kickoffEdit=false;renderDashboard()};
-  strip.appendChild(koBtn);
   // + Add package chip
   const addBtn=document.createElement('button');
   addBtn.style.cssText='display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px dashed var(--border);background:var(--surface);cursor:pointer;font-size:var(--fs-main-body);font-weight:500;color:var(--text3);transition:all .12s';
@@ -1753,6 +1894,18 @@ function renderDashboard(){
     document.getElementById('prog-pct').textContent=(kp.pct||0)+'%';
     crumb.innerHTML=`<a href="#" onclick="showView('overview');return false" style="color:var(--text3)">Overview</a>`+sep+`<span style="color:var(--text2)">${escHtml(proj.customer)}</span>`+sep+`<span style="color:var(--text2)">Kickoff</span>`;
     renderKickoffPanel(proj);
+    return;
+  }
+
+  // ── Summary mode: show the running project summary + progress log ──
+  if(summaryMode){
+    document.getElementById('tb-title').textContent=proj.customer+' — Summary';
+    document.getElementById('tb-sub').textContent='Running project summary & progress log';
+    const sp=projProgress(proj);
+    document.getElementById('prog-fill').style.width=(sp.pct||0)+'%';
+    document.getElementById('prog-pct').textContent=(sp.pct||0)+'%';
+    crumb.innerHTML=`<a href="#" onclick="showView('overview');return false" style="color:var(--text3)">Overview</a>`+sep+`<span style="color:var(--text2)">${escHtml(proj.customer)}</span>`+sep+`<span style="color:var(--text2)">Summary</span>`;
+    renderSummaryPanel(proj);
     return;
   }
 
@@ -1843,6 +1996,15 @@ function renderDashboard(){
             rlBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5 2H2.5A.5.5 0 002 2.5v7a.5.5 0 00.5.5h7a.5.5 0 00.5-.5V7M7 1h4v4M5.5 6.5l5-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             rlBtn.onclick=(e)=>{e.stopPropagation();jumpToRef(pkgKey,ph.id,task.t)};
             row.appendChild(rlBtn);
+          }
+          // Kickoff jump — on any task about the kick-off call, open the Kickoff form
+          if(isKickoffTask(task.t)){
+            const kBtn=document.createElement('button');
+            kBtn.className='ko-link-btn';
+            kBtn.title='Open the Kickoff / Discovery form';
+            kBtn.innerHTML='<span style="font-size:10px;line-height:1">📞</span> Kickoff';
+            kBtn.onclick=(e)=>{e.stopPropagation();jumpToKickoff()};
+            row.appendChild(kBtn);
           }
           tc.appendChild(row);
         });
