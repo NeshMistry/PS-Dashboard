@@ -284,6 +284,28 @@ textarea.ko-input{resize:vertical;line-height:1.5}
 .sum-entry:hover .sum-del{opacity:1}
 .sum-del:hover{color:var(--crit-ln);border-color:var(--crit-ln)}
 .sum-entry-text{font-size:12.5px;line-height:1.55;color:var(--text2)}
+/* ── Project Notes ── */
+.pn-tabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.pn-tab{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .12s}
+.pn-tab:hover{border-color:var(--border2)}
+.pn-tab.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+.pn-tab-act{background:none;border:none;color:rgba(255,255,255,.75);cursor:pointer;font-size:11px;padding:0 1px;line-height:1}
+.pn-tab-act:hover{color:#fff}
+.pn-tab-add{font-size:12px;padding:6px 12px;border-radius:20px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;transition:all .12s}
+.pn-tab-add:hover{color:var(--text2);border-color:var(--text2)}
+.pn-editor{width:100%;min-height:380px;font-size:13px;line-height:1.6;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);color:var(--text);font-family:inherit;resize:vertical}
+.pn-editor:focus{outline:none;border-color:var(--navy)}
+/* ── Toolbox ── */
+.tb-list{display:flex;flex-direction:column;gap:12px}
+.tb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.tb-card.editing{border-style:dashed;border-color:var(--border2)}
+.tb-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tb-name{font-size:13.5px;font-weight:600;color:var(--link-fg);text-decoration:none}
+a.tb-name:hover{text-decoration:underline}
+span.tb-name{color:var(--text)}
+.tb-tag{font-size:10.5px;font-weight:600;color:var(--text2);background:var(--surface2);padding:2px 9px;border-radius:20px;border:1px solid var(--border)}
+.tb-acts{margin-left:auto;display:flex;gap:5px}
+.tb-desc{font-size:12.5px;line-height:1.55;color:var(--text2);margin-top:8px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden}
 .section-hdr{display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--surface2);border-bottom:1px solid var(--border)}
@@ -389,6 +411,10 @@ textarea.ko-input{resize:vertical;line-height:1.5}
       <svg class="nb-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1h7l3 3v11H3z"/><path d="M9 1v4h4M5.5 8.5l1.5 1.5 3-3"/></svg>
       Pre-Requisites
     </button>
+    <button class="nav-btn" id="nav-toolbox" onclick="showView('toolbox')">
+      <svg class="nb-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6h14v8H1z"/><path d="M5 6V4a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0111 4v2M1 9.5h14"/><path d="M7 9v1.5h2V9"/></svg>
+      Toolbox
+    </button>
 
     <div class="nav-section" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding-right:10px">
       <span>Active Projects</span>
@@ -479,6 +505,20 @@ textarea.ko-input{resize:vertical;line-height:1.5}
       <div id="prereq-content"></div>
     </div>
 
+    <!-- Toolbox view -->
+    <div class="view" id="view-toolbox">
+      <div class="editor-header">
+        <div>
+          <div class="editor-title">Toolbox</div>
+          <div class="editor-sub">Curated scripts, links and resources for deployments — shared across all your projects. Add anything worth passing on to the next person.</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn sm primary" onclick="tbAdd()">+ Add resource</button>
+        </div>
+      </div>
+      <div id="toolbox-content"></div>
+    </div>
+
   </main>
 </div>
 </div>
@@ -545,6 +585,7 @@ if(!ST.projects)ST.projects={};        // projectId -> {...}
 if(!ST.activeProject)ST.activeProject=null;
 if(!ST.prereqs)ST.prereqs=null;        // null = use PREREQ_CONTENT default; object = user-edited override
 if(!ST.prereqEditMode)ST.prereqEditMode=false;
+if(ST.toolbox===undefined)ST.toolbox=null;   // null = seed defaults on first access
 
 // ── One-time cleanup: remove any custom PRA package the user may have created ──
 if(!ST._cleaned_custom_pra){
@@ -602,6 +643,8 @@ let currentView='dashboard';
 let kickoffMode=false;   // when true, dashboard shows the per-project Kickoff panel
 let kickoffEdit=false;   // when true, Kickoff questions can be edited/reordered/deleted
 let summaryMode=false;   // when true, dashboard shows the per-project Summary panel
+let notesMode=false;     // when true, dashboard shows the per-project Notes panel
+let tbEditId=null;       // toolbox entry currently being edited
 let pkgModalData=null;
 let phaseModalData=null;
 let projectModalData=null;
@@ -637,6 +680,7 @@ function ensureProjShape(p){
   if(!p.prereqChecks)p.prereqChecks={};
   if(p.kickoff===undefined)p.kickoff=null;   // null = not yet seeded; seeded lazily from template
   if(p.summary===undefined)p.summary=null;   // {current, log[]} — seeded lazily
+  if(p.projNotes===undefined)p.projNotes=null; // {pages:[{id,title,text}],activeId} — seeded lazily
   return p;
 }
 
@@ -671,7 +715,7 @@ function setTab(pkgKey,phId,tab){const t=tabFor(pkgKey);t[phId]=tab;save();rende
 function setPkg(k){
   // Switch which of the project's packages is currently being viewed
   const p=activeProj();if(!p)return;ensureProjShape(p);
-  kickoffMode=false;summaryMode=false;
+  kickoffMode=false;summaryMode=false;notesMode=false;
   if(!p.pkgKeys.includes(k))p.pkgKeys.push(k);
   p.activePkgKey=k;save();renderAll();
 }
@@ -684,7 +728,7 @@ function resetProgress(){
 // Add a package to the current project
 function addPackageToProject(k){
   const p=activeProj();if(!p)return;ensureProjShape(p);
-  kickoffMode=false;summaryMode=false;
+  kickoffMode=false;summaryMode=false;notesMode=false;
   if(!p.pkgKeys.includes(k))p.pkgKeys.push(k);
   p.activePkgKey=k;save();renderAll();showView('dashboard');
   showToast((getPkg(k)?.label||'Package')+' added to '+p.customer);
@@ -942,6 +986,134 @@ function renderSummaryPanel(proj){
   document.getElementById('phase-list').innerHTML=h;
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// PROJECT NOTES  — per-project, multi-page notebook (OneNote-lite)
+// ════════════════════════════════════════════════════════════════════════════
+function getProjNotes(proj){
+  ensureProjShape(proj);
+  if(!proj.projNotes||!Array.isArray(proj.projNotes.pages)||!proj.projNotes.pages.length){
+    const pid='n'+Date.now().toString(36);
+    proj.projNotes={pages:[{id:pid,title:'General',text:''},{id:pid+'q',title:'Questions',text:''}],activeId:pid};
+  }
+  if(!proj.projNotes.pages.find(pg=>pg.id===proj.projNotes.activeId))proj.projNotes.activeId=proj.projNotes.pages[0].id;
+  return proj.projNotes;
+}
+function pnActivePage(proj){const n=getProjNotes(proj);return n.pages.find(pg=>pg.id===n.activeId)}
+function pnSetActive(id){const p=activeProj();if(!p)return;getProjNotes(p).activeId=id;save();renderDashboard()}
+function pnSetText(v){const p=activeProj();if(!p)return;const pg=pnActivePage(p);if(pg){pg.text=v;save()}}
+function pnAddPage(){
+  const p=activeProj();if(!p)return;const n=getProjNotes(p);
+  const title=prompt('Name for the new page:','New page');if(title===null)return;
+  const pg={id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),title:(title.trim()||'New page').slice(0,40),text:''};
+  n.pages.push(pg);n.activeId=pg.id;save();renderDashboard();
+}
+function pnRenamePage(id){
+  const p=activeProj();if(!p)return;const pg=getProjNotes(p).pages.find(x=>x.id===id);if(!pg)return;
+  const t=prompt('Rename page:',pg.title);if(t===null)return;
+  pg.title=(t.trim()||pg.title).slice(0,40);save();renderDashboard();
+}
+function pnDelPage(id){
+  const p=activeProj();if(!p)return;const n=getProjNotes(p);
+  const pg=n.pages.find(x=>x.id===id);if(!pg)return;
+  if(n.pages.length===1){showToast('A notebook needs at least one page');return}
+  if(pg.text.trim()&&!confirm('Delete page “'+pg.title+'” and its contents?'))return;
+  n.pages=n.pages.filter(x=>x.id!==id);
+  if(n.activeId===id)n.activeId=n.pages[0].id;
+  save();renderDashboard();
+}
+function pnCopyPage(){
+  const p=activeProj();if(!p)return;const pg=pnActivePage(p);if(!pg)return;
+  const out=pg.title+' — '+p.customer+'\n'+'-'.repeat(32)+'\n'+(pg.text||'');
+  const done=()=>showToast('Page copied to clipboard');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(out).then(done).catch(()=>koCopyFallback(out,done));
+  else koCopyFallback(out,done);
+}
+function renderNotesPanel(proj){
+  const n=getProjNotes(proj);
+  document.getElementById('stats-grid').innerHTML='';
+  const pg=pnActivePage(proj);
+  let h='<div class="ko-head"><div>'
+    +'<div class="ko-title">Project Notes</div>'
+    +'<div class="ko-sub">A notebook for '+escHtml(proj.customer)+'. Pages keep things tidy — questions for the PM, call scribbles, follow-ups. Everything auto-saves.</div>'
+    +'</div><div class="ko-actions"><button class="btn sm" onclick="pnCopyPage()">⧉ Copy page</button></div></div>';
+  h+='<div class="pn-tabs">';
+  n.pages.forEach(x=>{
+    const on=x.id===n.activeId;
+    h+='<div class="pn-tab'+(on?' on':'')+'" onclick="pnSetActive(\''+x.id+'\')">'+escHtml(x.title)
+      +(on?'<button class="pn-tab-act" title="Rename page" onclick="event.stopPropagation();pnRenamePage(\''+x.id+'\')">✎</button>'
+           +'<button class="pn-tab-act" title="Delete page" onclick="event.stopPropagation();pnDelPage(\''+x.id+'\')">✕</button>':'')
+      +'</div>';
+  });
+  h+='<button class="pn-tab-add" onclick="pnAddPage()">+ Page</button></div>';
+  h+='<textarea class="pn-editor" placeholder="Write anything — questions to ask, decisions made, numbers to remember…" oninput="pnSetText(this.value)">'+escHtml(pg?pg.text:'')+'</textarea>';
+  document.getElementById('phase-list').innerHTML=h;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOOLBOX  — global, curated scripts & resources (shared across projects)
+// ════════════════════════════════════════════════════════════════════════════
+function getToolbox(){
+  if(!Array.isArray(ST.toolbox)){
+    ST.toolbox=[{
+      id:'tb_personal_folders',
+      name:'Platform Managed Personal Folders v2 (Active Folder Management)',
+      url:'https://github.com/CorpJNTech/Delinea/tree/main/1).%20Event%20Pipelines%20Scripts/Platform%20Managed%20Personal%20Folders%20v2%20(Active%20Folder%20Management)',
+      tag:'Event Pipelines',
+      desc:'Event Pipeline script that auto-creates and actively manages a set of personal folders in Platform for each user. Note: the GitHub repo may be private — ask the author for access before sharing the link with a customer or colleague.'
+    }];
+    save();
+  }
+  return ST.toolbox;
+}
+function tbAdd(){
+  const tb=getToolbox();
+  const e={id:'tb'+Date.now().toString(36),name:'',url:'',tag:'',desc:''};
+  tb.unshift(e);tbEditId=e.id;save();renderToolbox();
+}
+function tbEdit(id){tbEditId=id;renderToolbox()}
+function tbDoneEdit(){
+  const tb=getToolbox();const e=tb.find(x=>x.id===tbEditId);
+  if(e&&!e.name.trim()&&!e.url.trim()&&!e.desc.trim()){ST.toolbox=tb.filter(x=>x.id!==e.id)} // discard empty new entries
+  tbEditId=null;save();renderToolbox();
+}
+function tbSet(id,field,v){const e=getToolbox().find(x=>x.id===id);if(e){e[field]=v;save()}}
+function tbDel(id){
+  const e=getToolbox().find(x=>x.id===id);if(!e)return;
+  if(!confirm('Remove “'+(e.name||'this resource')+'” from the toolbox?'))return;
+  ST.toolbox=getToolbox().filter(x=>x.id!==id);if(tbEditId===id)tbEditId=null;
+  save();renderToolbox();
+}
+function renderToolbox(){
+  const tb=getToolbox();
+  const el=document.getElementById('toolbox-content');if(!el)return;
+  if(!tb.length){el.innerHTML='<div class="empty-state" style="padding:32px">Nothing here yet. Click “+ Add resource” to save your first script or link.</div>';return}
+  let h='<div class="tb-list">';
+  tb.forEach(e=>{
+    if(e.id===tbEditId){
+      h+='<div class="tb-card editing">'
+        +'<input class="ko-input" placeholder="Name — e.g. Personal Folders script" value="'+escHtml(e.name)+'" oninput="tbSet(\''+e.id+'\',\'name\',this.value)">'
+        +'<input class="ko-input" style="margin-top:8px" placeholder="https:// link (GitHub, KB article, doc…)" value="'+escHtml(e.url)+'" oninput="tbSet(\''+e.id+'\',\'url\',this.value)">'
+        +'<input class="ko-input" style="margin-top:8px;max-width:260px" placeholder="Tag — e.g. Event Pipelines" value="'+escHtml(e.tag)+'" oninput="tbSet(\''+e.id+'\',\'tag\',this.value)">'
+        +'<textarea class="ko-input" style="margin-top:8px" rows="3" placeholder="What it does, when to use it, gotchas…" oninput="tbSet(\''+e.id+'\',\'desc\',this.value)">'+escHtml(e.desc)+'</textarea>'
+        +'<div style="display:flex;gap:7px;margin-top:10px"><button class="btn sm primary" onclick="tbDoneEdit()">✓ Done</button>'
+        +'<button class="btn sm danger" onclick="tbDel(\''+e.id+'\')">Delete</button></div>'
+        +'</div>';
+    } else {
+      const u=safeUrl(e.url);
+      h+='<div class="tb-card"><div class="tb-top">'
+        +(u!=='#'?'<a class="tb-name" href="'+escHtml(u)+'" target="_blank" rel="noopener">'+escHtml(e.name||'Untitled')+' ↗</a>'
+                 :'<span class="tb-name">'+escHtml(e.name||'Untitled')+'</span>')
+        +(e.tag?'<span class="tb-tag">'+escHtml(e.tag)+'</span>':'')
+        +'<div class="tb-acts"><button class="ko-mini" title="Edit" onclick="tbEdit(\''+e.id+'\')">✎</button>'
+        +'<button class="ko-mini danger" title="Remove" onclick="tbDel(\''+e.id+'\')">✕</button></div></div>'
+        +(e.desc?'<div class="tb-desc">'+escHtml(e.desc)+'</div>':'')
+        +'</div>';
+    }
+  });
+  h+='</div>';
+  el.innerHTML=h;
+}
+
 // ── Project CRUD ──
 function projProgress(proj){
   ensureProjShape(proj);
@@ -965,7 +1137,7 @@ function projPkgProgress(proj,k){
 function setActiveProject(pid){
   ST.activeProject=pid;save();
   currentView='dashboard';
-  kickoffMode=false;kickoffEdit=false;summaryMode=false;
+  kickoffMode=false;kickoffEdit=false;summaryMode=false;notesMode=false;
   renderAll();
   showView('dashboard');
 }
@@ -1057,7 +1229,7 @@ function archiveProject(pid){
   if(ST.activeProject===pid){
     const live=Object.keys(ST.projects).filter(id=>!ST.projects[id].archived);
     ST.activeProject=live.length?live[0]:null;
-    kickoffMode=false;kickoffEdit=false;summaryMode=false;
+    kickoffMode=false;kickoffEdit=false;summaryMode=false;notesMode=false;
   }
   save();renderAll();showToast('Project archived');
 }
@@ -1073,7 +1245,7 @@ function deleteProject(pid){
   if(ST.activeProject===pid){
     const live=Object.keys(ST.projects).filter(id=>!ST.projects[id].archived);
     ST.activeProject=live.length?live[0]:(Object.keys(ST.projects)[0]||null);
-    kickoffMode=false;kickoffEdit=false;summaryMode=false;
+    kickoffMode=false;kickoffEdit=false;summaryMode=false;notesMode=false;
   }
   save();renderAll();showToast('Project deleted');
 }
@@ -1106,7 +1278,8 @@ function exportData(){
     userPkgs:ST.userPkgs,
     projects:ST.projects,
     activeProject:ST.activeProject,
-    prereqs:ST.prereqs
+    prereqs:ST.prereqs,
+    toolbox:ST.toolbox
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1142,6 +1315,7 @@ function importData(e){
       const data=JSON.parse(ev.target.result);
       if(data.userPkgs)ST.userPkgs={...ST.userPkgs,...data.userPkgs};
       if(data.prereqs)ST.prereqs=data.prereqs;
+      if(Array.isArray(data.toolbox))ST.toolbox=data.toolbox;
       if(data.projects){
         ST.projects={...ST.projects,...data.projects};
         // Make sure each imported project has the right shape
@@ -1454,6 +1628,7 @@ function showView(v){
   const nb=document.getElementById('nav-'+v);if(nb)nb.classList.add('active');
   if(v==='packages')renderPackageManager();
   if(v==='prereqs')renderPrereqs();
+  if(v==='toolbox')renderToolbox();
   if(v==='overview')renderOverview();
   // Breadcrumb only makes sense on the project dashboard
   const crumb=document.getElementById('tb-crumb');
@@ -1632,6 +1807,7 @@ function renderAll(){
   renderDashboard();
   if(currentView==='packages')renderPackageManager();
   if(currentView==='prereqs')renderPrereqs();
+  if(currentView==='toolbox')renderToolbox();
   if(currentView==='overview')renderOverview();
 }
 
@@ -1831,14 +2007,20 @@ function renderDashboard(){
   const koCol='#0891B2';
   koBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${kickoffMode?koCol:'var(--border)'};background:${kickoffMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${kickoffMode?'600':'400'};color:${kickoffMode?koCol:'var(--text2)'};transition:all .12s`;
   koBtn.innerHTML='<span style="font-size:13px;line-height:1">📞</span> Kickoff';
-  koBtn.onclick=()=>{kickoffMode=true;summaryMode=false;kickoffEdit=false;renderDashboard()};
+  koBtn.onclick=()=>{kickoffMode=true;summaryMode=false;notesMode=false;kickoffEdit=false;renderDashboard()};
   strip.appendChild(koBtn);
   const sumBtn=document.createElement('button');
   const sumCol='#7C3AED';
   sumBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${summaryMode?sumCol:'var(--border)'};background:${summaryMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${summaryMode?'600':'400'};color:${summaryMode?sumCol:'var(--text2)'};transition:all .12s`;
   sumBtn.innerHTML='<span style="font-size:13px;line-height:1">📝</span> Summary';
-  sumBtn.onclick=()=>{summaryMode=true;kickoffMode=false;renderDashboard()};
+  sumBtn.onclick=()=>{summaryMode=true;kickoffMode=false;notesMode=false;renderDashboard()};
   strip.appendChild(sumBtn);
+  const pnBtn=document.createElement('button');
+  const pnCol='#059669';
+  pnBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${notesMode?pnCol:'var(--border)'};background:${notesMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${notesMode?'600':'400'};color:${notesMode?pnCol:'var(--text2)'};transition:all .12s`;
+  pnBtn.innerHTML='<span style="font-size:13px;line-height:1">📒</span> Notes';
+  pnBtn.onclick=()=>{notesMode=true;kickoffMode=false;summaryMode=false;renderDashboard()};
+  strip.appendChild(pnBtn);
   pkgKeys.forEach(k=>{
     const p=allPkgs()[k];
     if(!p)return;
@@ -1871,7 +2053,7 @@ function renderDashboard(){
       advisory:'ADV',enablement:'ENBL'
     };
     const col=PKG_COLORS[k]||'#555';const bg=PKG_BGS[k]||'#f5f5f5';
-    const active=(pkgKey===k)&&!kickoffMode&&!summaryMode;
+    const active=(pkgKey===k)&&!kickoffMode&&!summaryMode&&!notesMode;
     btn.style.cssText=`display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${active?col:'var(--border)'};background:${active?bg:'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${active?'600':'400'};color:${active?col:'var(--text2)'};transition:all .12s`;
     btn.innerHTML=`<span style="font-size:10px;font-weight:700;padding:1px 5px;background:${bg};color:${col};border-radius:3px">${escHtml(PKG_ABBR[k]||p.label.slice(0,4).toUpperCase())}</span>${escHtml(p.label)}`;
     btn.onclick=()=>setPkg(k);
@@ -1906,6 +2088,18 @@ function renderDashboard(){
     document.getElementById('prog-pct').textContent=(sp.pct||0)+'%';
     crumb.innerHTML=`<a href="#" onclick="showView('overview');return false" style="color:var(--text3)">Overview</a>`+sep+`<span style="color:var(--text2)">${escHtml(proj.customer)}</span>`+sep+`<span style="color:var(--text2)">Summary</span>`;
     renderSummaryPanel(proj);
+    return;
+  }
+
+  // ── Notes mode: show the per-project multi-page notes ──
+  if(notesMode){
+    document.getElementById('tb-title').textContent=proj.customer+' — Notes';
+    document.getElementById('tb-sub').textContent='Project notebook — questions, call notes, anything worth writing down';
+    const np=projProgress(proj);
+    document.getElementById('prog-fill').style.width=(np.pct||0)+'%';
+    document.getElementById('prog-pct').textContent=(np.pct||0)+'%';
+    crumb.innerHTML=`<a href="#" onclick="showView('overview');return false" style="color:var(--text3)">Overview</a>`+sep+`<span style="color:var(--text2)">${escHtml(proj.customer)}</span>`+sep+`<span style="color:var(--text2)">Notes</span>`;
+    renderNotesPanel(proj);
     return;
   }
 
