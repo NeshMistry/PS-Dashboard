@@ -1028,6 +1028,27 @@ function pnCopyPage(){
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(out).then(done).catch(()=>koCopyFallback(out,done));
   else koCopyFallback(out,done);
 }
+// Continue bullet / numbered lists when Enter is pressed in the notes editor
+function pnKeydown(e){
+  if(e.key!=='Enter'||e.shiftKey)return;            // only plain Enter
+  const ta=e.target;
+  const pos=ta.selectionStart;
+  if(pos!==ta.selectionEnd)return;                  // ignore Enter while text is selected
+  const lineStart=ta.value.lastIndexOf('\n',pos-1)+1;
+  const line=ta.value.slice(lineStart,pos);
+  const m=line.match(/^(\s*)(?:([-*•])|(\d+)([.)]))\s(.*)$/);
+  if(!m)return;                                     // not a list line — normal Enter
+  e.preventDefault();
+  const indent=m[1],bullet=m[2],num=m[3],punct=m[4],rest=m[5];
+  if(!rest.trim()){
+    // Enter on an EMPTY list item = end the list (strip the marker)
+    ta.setRangeText('',lineStart,pos,'start');
+  } else {
+    const marker=bullet?bullet+' ':(parseInt(num,10)+1)+punct+' ';
+    ta.setRangeText('\n'+indent+marker,pos,pos,'end');
+  }
+  pnSetText(ta.value);                              // setRangeText doesn't fire oninput — save manually
+}
 function renderNotesPanel(proj){
   const n=getProjNotes(proj);
   document.getElementById('stats-grid').innerHTML='';
@@ -1045,7 +1066,7 @@ function renderNotesPanel(proj){
       +'</div>';
   });
   h+='<button class="pn-tab-add" onclick="pnAddPage()">+ Page</button></div>';
-  h+='<textarea class="pn-editor" placeholder="Write anything — questions to ask, decisions made, numbers to remember…" oninput="pnSetText(this.value)">'+escHtml(pg?pg.text:'')+'</textarea>';
+  h+='<textarea class="pn-editor" placeholder="Write anything — questions to ask, decisions made, numbers to remember…" oninput="pnSetText(this.value)" onkeydown="pnKeydown(event)">'+escHtml(pg?pg.text:'')+'</textarea>';
   document.getElementById('phase-list').innerHTML=h;
 }
 
