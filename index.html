@@ -129,7 +129,7 @@ button{cursor:pointer}
 .view{display:none}.view.active{display:block}
 
 /* ── Stats ── */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;box-shadow:var(--shadow)}
 .stat-n{font-size:var(--fs-stat-num);font-weight:700;color:var(--text);line-height:1}
 .stat-l{font-size:var(--fs-main-small);color:var(--text3);margin-top:3px}
@@ -161,6 +161,9 @@ button{cursor:pointer}
 .cb{width:15px;height:15px;border:1.5px solid var(--border2);border-radius:4px;flex-shrink:0;cursor:pointer;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .cb:hover{border-color:var(--navy)}.cb.on{background:var(--green);border-color:var(--green)}
 .cb.on::after{content:'';width:8px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px)}
+.cb.ip{background:var(--warn-ln);border-color:var(--warn-ln)}
+.cb.ip::after{content:'';width:7px;height:2px;background:#fff;border-radius:1px}
+.task-lbl.ip{color:var(--warn-fg);font-weight:500}
 .task-lbl{font-size:var(--fs-main-body);color:var(--text);line-height:1.5;flex:1;cursor:pointer}
 .task-lbl.done{text-decoration:line-through;color:var(--text3)}
 .lim-badge{font-size:10px;color:var(--text3);white-space:nowrap;background:var(--surface2);padding:1px 6px;border-radius:20px;border:1px solid var(--border);align-self:flex-start;margin-top:2px;flex-shrink:0}
@@ -700,16 +703,27 @@ function notesFor(pkgKey,phId){
 function totalTasks(pkg){return pkg.phases.reduce((a,p)=>a+p.tasks.length,0)}
 function doneTasks(pkg,pkgKey){
   const prog=progFor(pkgKey);
-  return pkg.phases.reduce((a,p)=>a+p.tasks.filter((_,i)=>prog[p.id+'_'+i]).length,0);
+  return pkg.phases.reduce((a,p)=>a+p.tasks.filter((_,i)=>prog[p.id+'_'+i]===true).length,0);
+}
+function ipTasks(pkg,pkgKey){
+  const prog=progFor(pkgKey);
+  return pkg.phases.reduce((a,p)=>a+p.tasks.filter((_,i)=>prog[p.id+'_'+i]==='ip').length,0);
 }
 function phaseProg(phase,pkgKey){
   const prog=progFor(pkgKey);
-  const d=phase.tasks.filter((_,i)=>prog[phase.id+'_'+i]).length;
+  const d=phase.tasks.filter((_,i)=>prog[phase.id+'_'+i]===true).length;
   return{done:d,total:phase.tasks.length,pct:Math.round(d/phase.tasks.length*100)};
 }
 
 // ── Actions ──
-function toggle(pkgKey,phId,i){const p=progFor(pkgKey);p[phId+'_'+i]=!p[phId+'_'+i];save();renderDashboard()}
+function toggle(pkgKey,phId,i){
+  // Cycle: not started -> in progress ('ip') -> done (true) -> not started
+  const p=progFor(pkgKey);const k=phId+'_'+i;
+  if(p[k]===true){delete p[k]}
+  else if(p[k]==='ip'){p[k]=true}
+  else{p[k]='ip'}
+  save();renderDashboard();
+}
 function togglePhase(pkgKey,phId){const o=openFor(pkgKey);o[phId]=!o[phId];save();renderDashboard()}
 function setTab(pkgKey,phId,tab){const t=tabFor(pkgKey);t[phId]=tab;save();renderDashboard()}
 function setPkg(k){
@@ -900,11 +914,11 @@ function getSummary(proj){
 function currentPhaseInfo(proj,k){
   const pkg=getPkg(k);if(!pkg||!pkg.phases||!pkg.phases.length)return null;
   const prog=proj.progress[k]||{};
-  let idx=pkg.phases.findIndex(ph=>ph.tasks.filter((_,ti)=>prog[ph.id+'_'+ti]).length<ph.tasks.length);
+  let idx=pkg.phases.findIndex(ph=>ph.tasks.filter((_,ti)=>prog[ph.id+'_'+ti]===true).length<ph.tasks.length);
   const allDone=idx<0;
   if(idx<0)idx=pkg.phases.length-1;
   const ph=pkg.phases[idx];
-  const d=ph.tasks.filter((_,ti)=>prog[ph.id+'_'+ti]).length;
+  const d=ph.tasks.filter((_,ti)=>prog[ph.id+'_'+ti]===true).length;
   const phasePct=ph.tasks.length?Math.round(d/ph.tasks.length*100):0;
   const label=ph.title.includes(' — ')?ph.title.split(' — ').slice(1).join(' — '):ph.title;
   return {idx:idx+1,total:pkg.phases.length,label,phasePct,overall:projPkgProgress(proj,k).pct,allDone,pkgLabel:pkg.label,pkgKey:k};
@@ -1142,7 +1156,7 @@ function projProgress(proj){
   (proj.pkgKeys||[]).forEach(k=>{
     const pkg=getPkg(k);if(!pkg)return;
     const prog=proj.progress[k]||{};
-    pkg.phases.forEach(ph=>{ph.tasks.forEach((_,i)=>{total++;if(prog[ph.id+'_'+i])done++})});
+    pkg.phases.forEach(ph=>{ph.tasks.forEach((_,i)=>{total++;if(prog[ph.id+'_'+i]===true)done++})});
   });
   return{done,total,pct:total?Math.round(done/total*100):0};
 }
@@ -1152,7 +1166,7 @@ function projPkgProgress(proj,k){
   const pkg=getPkg(k);if(!pkg)return{done:0,total:0,pct:0};
   const prog=proj.progress[k]||{};
   let done=0,total=0;
-  pkg.phases.forEach(ph=>{ph.tasks.forEach((_,i)=>{total++;if(prog[ph.id+'_'+i])done++})});
+  pkg.phases.forEach(ph=>{ph.tasks.forEach((_,i)=>{total++;if(prog[ph.id+'_'+i]===true)done++})});
   return{done,total,pct:total?Math.round(done/total*100):0};
 }
 function setActiveProject(pid){
@@ -2138,11 +2152,12 @@ function renderDashboard(){
   }
 
   // Stats
-  const total=totalTasks(pkg),done=doneTasks(pkg,pkgKey);
+  const total=totalTasks(pkg),done=doneTasks(pkg,pkgKey),inprog=ipTasks(pkg,pkgKey);
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('stats-grid').innerHTML=`
     <div class="stat-card"><div class="stat-n">${done}</div><div class="stat-l">Tasks done</div></div>
-    <div class="stat-card"><div class="stat-n">${total-done}</div><div class="stat-l">Remaining</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--warn-ln)">${inprog}</div><div class="stat-l">In progress</div></div>
+    <div class="stat-card"><div class="stat-n">${total-done-inprog}</div><div class="stat-l">Not started</div></div>
     <div class="stat-card"><div class="stat-n">${pkg.phases.length}</div><div class="stat-l">Phases</div></div>
     <div class="stat-card"><div class="stat-n">${pct}%</div><div class="stat-l">Complete</div></div>`;
 
@@ -2194,11 +2209,12 @@ function renderDashboard(){
         const tc=document.createElement('div');tc.className='tc on';
         const prog2=progFor(pkgKey);
         ph.tasks.forEach((task,i)=>{
-          const checked=!!prog2[ph.id+'_'+i];
+          const st=prog2[ph.id+'_'+i];               // undefined | 'ip' | true
           const row=document.createElement('div');row.className='task-row';
-          const cb=document.createElement('div');cb.className='cb'+(checked?' on':'');
+          const cb=document.createElement('div');cb.className='cb'+(st===true?' on':st==='ip'?' ip':'');
+          cb.title=st===true?'Done — click to clear':st==='ip'?'In progress — click to mark done':'Not started — click to mark in progress';
           cb.onclick=()=>toggle(pkgKey,ph.id,i);
-          const lbl=document.createElement('div');lbl.className='task-lbl'+(checked?' done':'');
+          const lbl=document.createElement('div');lbl.className='task-lbl'+(st===true?' done':st==='ip'?' ip':'');
           lbl.textContent=task.t;lbl.onclick=()=>toggle(pkgKey,ph.id,i);
           row.appendChild(cb);row.appendChild(lbl);
           if(task.lim){const b=document.createElement('div');b.className='lim-badge';b.textContent=task.lim;row.appendChild(b)}
