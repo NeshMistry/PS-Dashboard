@@ -772,8 +772,8 @@ const KO_TYPES=[
 function koGenId(){return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function defaultKickoff(){
   return {questions:[
-    {id:koGenId(),label:'Project deadline',type:'date',ans:''},
     {id:koGenId(),label:'What does the customer want to get out of the product? (objectives / success criteria)',type:'textarea',ans:''},
+    {id:koGenId(),label:'Project deadline',type:'date',ans:''},
     {id:koGenId(),label:'Managing multiple domains?',type:'yesno',ans:'',note:''},
     {id:koGenId(),label:'Any isolated network segments?',type:'yesno',ans:'',note:''},
     {id:koGenId(),label:'Which teams will be using the product?',type:'textarea',ans:''},
