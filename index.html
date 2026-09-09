@@ -26,7 +26,7 @@
   /*  Each group controls one area. Edit the number, save, refresh.   */
   /* ────────────────────────────────────────────────────────────── */
   --fs-logo:        15px;  /* DELINEA logo */
-  --fs-logo-sub:    10px;  /* logo subtitle */
+  --fs-logo-sub:    12px;  /* logo subtitle */
   --fs-sb-heading:  12px;  /* sidebar section headings: VIEWS, PROJECTS, PHASES */
   --fs-sb-project:  13.5px;/* project (customer) names in sidebar */
   --fs-sb-body:     12px;  /* sidebar buttons + package / phase names */
@@ -394,7 +394,7 @@ span.tb-name{color:var(--text)}
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="logo-mark">DELINEA</div>
-    <div class="logo-sub">PS Deployment Dashboard</div>
+    <div class="logo-sub">PS Deployment Dashboard - By Hinesh Mistry</div>
   </div>
   <div style="flex:1;overflow-y:auto">
     <div class="nav-section">Views</div>
@@ -694,12 +694,10 @@ function progFor(pkgKey){const p=activeProj();if(!p)return{};ensureProjShape(p);
 function openFor(pkgKey){const p=activeProj();if(!p)return{};ensureProjShape(p);return p.openPhases[pkgKey]||(p.openPhases[pkgKey]={})}
 function tabFor(pkgKey){const p=activeProj();if(!p)return{};ensureProjShape(p);return p.activeTabs[pkgKey]||(p.activeTabs[pkgKey]={})}
 function notesFor(pkgKey,phId){
-  const p=activeProj();if(!p)return[];ensureProjShape(p);
-  if(!p.myNotes[pkgKey])p.myNotes[pkgKey]={};
-  if(!p.myNotes[pkgKey][phId])p.myNotes[pkgKey][phId]=[];
-  return p.myNotes[pkgKey][phId];
+  if(!ST.notesGlobal[pkgKey])ST.notesGlobal[pkgKey]={};
+  if(!ST.notesGlobal[pkgKey][phId])ST.notesGlobal[pkgKey][phId]=[];
+  return ST.notesGlobal[pkgKey][phId];
 }
-
 function totalTasks(pkg){return pkg.phases.reduce((a,p)=>a+p.tasks.length,0)}
 function doneTasks(pkg,pkgKey){
   const prog=progFor(pkgKey);
@@ -751,12 +749,9 @@ function addPackageToProject(k){
 function removePackageFromProject(k){
   const p=activeProj();if(!p)return;ensureProjShape(p);
   const pk=getPkg(k);
-  if(!confirm('Remove the '+(pk?pk.label:'')+' package from '+p.customer+'? Its progress and notes for this project will be deleted.'))return;
+  if(!confirm('Remove the '+(pk?pk.label:'')+' package from '+p.customer+'? Its progress for this project will be deleted. (Reference edits and My Notes are shared across projects and will stay.)'))return;
   p.pkgKeys=p.pkgKeys.filter(x=>x!==k);
-  delete p.progress[k];delete p.openPhases[k];delete p.activeTabs[k];delete p.myNotes[k];
-  // clean ref overrides/editmode for that package
-  Object.keys(p.refOverrides||{}).forEach(rk=>{if(rk.startsWith(k+'__'))delete p.refOverrides[rk]});
-  Object.keys(p.refEditMode||{}).forEach(rk=>{if(rk.startsWith(k+'__'))delete p.refEditMode[rk]});
+  delete p.progress[k];delete p.openPhases[k];delete p.activeTabs[k];
   if(p.activePkgKey===k)p.activePkgKey=p.pkgKeys[0]||null;
   save();renderAll();showToast('Package removed');
 }
@@ -772,8 +767,8 @@ const KO_TYPES=[
 function koGenId(){return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function defaultKickoff(){
   return {questions:[
-    {id:koGenId(),label:'What does the customer want to get out of the product? (objectives / success criteria)',type:'textarea',ans:''},
     {id:koGenId(),label:'Project deadline',type:'date',ans:''},
+    {id:koGenId(),label:'What does the customer want to get out of the product? (objectives / success criteria)',type:'textarea',ans:''},
     {id:koGenId(),label:'Managing multiple domains?',type:'yesno',ans:'',note:''},
     {id:koGenId(),label:'Any isolated network segments?',type:'yesno',ans:'',note:''},
     {id:koGenId(),label:'Which teams will be using the product?',type:'textarea',ans:''},
@@ -1314,7 +1309,9 @@ function exportData(){
     projects:ST.projects,
     activeProject:ST.activeProject,
     prereqs:ST.prereqs,
-    toolbox:ST.toolbox
+    toolbox:ST.toolbox,
+    refGlobal:ST.refGlobal,
+    notesGlobal:ST.notesGlobal
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1351,6 +1348,8 @@ function importData(e){
       if(data.userPkgs)ST.userPkgs={...ST.userPkgs,...data.userPkgs};
       if(data.prereqs)ST.prereqs=data.prereqs;
       if(Array.isArray(data.toolbox))ST.toolbox=data.toolbox;
+      if(data.refGlobal)ST.refGlobal=data.refGlobal;
+      if(data.notesGlobal)ST.notesGlobal=data.notesGlobal;
       if(data.projects){
         ST.projects={...ST.projects,...data.projects};
         // Make sure each imported project has the right shape
@@ -1371,6 +1370,7 @@ function importData(e){
         };
         if(!ST.activeProject)ST.activeProject=pid;
       }
+      migrateSharedKnowledge(); // lift knowledge out of older per-project backups
       save();renderAll();showToast('Backup imported successfully');
     }catch(err){alert('Could not read backup file. Make sure it is a valid Delinea PS backup.')}
   };
@@ -1675,39 +1675,36 @@ function showView(v){
 // ════════════════════════════════════════════════════════════════════════════
 // ── Reference override helpers ────────────────────────────────────────────────
 function refKey(pkgKey,phId){return pkgKey+'__'+phId}
+// Reference edits & My Notes are GLOBAL — shared knowledge about the system,
+// keyed by package+phase, the same across every project.
 function getRef(pkgKey,phId){
-  const p=activeProj();
   const k=refKey(pkgKey,phId);
-  if(p){ensureProjShape(p);if(p.refOverrides[k])return p.refOverrides[k];}
+  if(ST.refGlobal&&ST.refGlobal[k])return ST.refGlobal[k];
   const ph=getPkg(pkgKey)?.phases?.find(x=>x.id===phId);
   return ph?.ref||{sections:[],tips:[],docs:[]};
 }
 function setRef(pkgKey,phId,ref){
-  const p=activeProj();if(!p)return;ensureProjShape(p);
-  p.refOverrides[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ref));
+  ST.refGlobal[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ref));
   save();
 }
 function resetRef(pkgKey,phId){
-  const p=activeProj();if(!p)return;ensureProjShape(p);
-  delete p.refOverrides[refKey(pkgKey,phId)];
+  delete ST.refGlobal[refKey(pkgKey,phId)];
   save();
 }
-function isRefEditing(pkgKey,phId){const p=activeProj();if(!p)return false;ensureProjShape(p);return !!p.refEditMode[refKey(pkgKey,phId)]}
+function isRefEditing(pkgKey,phId){return !!(ST.refEditG&&ST.refEditG[refKey(pkgKey,phId)])}
 function setRefEditing(pkgKey,phId,val){
-  const p=activeProj();if(!p)return;ensureProjShape(p);
-  p.refEditMode[refKey(pkgKey,phId)]=val;
-  // When entering edit mode, snapshot current ref into overrides so edits are isolated
-  if(val&&!p.refOverrides[refKey(pkgKey,phId)]){
+  ST.refEditG[refKey(pkgKey,phId)]=val;
+  // When entering edit mode, snapshot current ref into the global override so edits are isolated
+  if(val&&!ST.refGlobal[refKey(pkgKey,phId)]){
     const ph=getPkg(pkgKey)?.phases?.find(x=>x.id===phId);
-    if(ph?.ref)p.refOverrides[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ph.ref));
+    if(ph?.ref)ST.refGlobal[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ph.ref));
   }
   save();
 }
 // Save current edit form state before re-render
 function saveRefEditState(pkgKey,phId){
-  const p=activeProj();if(!p)return;ensureProjShape(p);
   const k=refKey(pkgKey,phId);
-  const ref=p.refOverrides[k];
+  const ref=ST.refGlobal[k];
   if(!ref)return;
   // Read section labels + items
   ref.sections.forEach((sec,si)=>{
@@ -2308,7 +2305,7 @@ function renderDashboard(){
           editToggle.style.cssText='font-size:10px;padding:2px 8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:none;color:var(--text3);cursor:pointer';
           editToggle.textContent='✏ Edit reference';
           editToggle.onclick=()=>{setRefEditing(pkgKey,ph.id,true);renderDashboard()};
-          const hasOverride=(()=>{const _p=activeProj();return _p&&_p.refOverrides&&!!_p.refOverrides[refKey(pkgKey,ph.id)]})();
+          const hasOverride=!!ST.refGlobal[refKey(pkgKey,ph.id)];
           if(hasOverride){
             const badge=document.createElement('span');
             badge.style.cssText='font-size:9px;margin-left:5px;padding:1px 5px;background:var(--blue-lt);color:var(--navy);border-radius:10px;font-weight:600';
@@ -2386,7 +2383,7 @@ function renderDashboard(){
 
         const form=document.createElement('div');form.className='note-add-form';
         const ta=document.createElement('textarea');
-        ta.className='note-input';ta.rows=2;ta.placeholder='Add a note — a gotcha, customer-specific tip, something that worked...';
+        ta.className='note-input';ta.rows=2;ta.placeholder='Add a note — a gotcha, a tip, something that worked — shared across all projects...';
         const botRow=document.createElement('div');botRow.className='note-add-row';
         const sel=document.createElement('select');sel.className='note-type-select';
         sel.innerHTML=`<option value="">Plain note</option><option value="tip">✔ Best practice</option><option value="warn">⚠ Watch out</option><option value="crit">🛑 Critical</option>`;
@@ -2475,6 +2472,10 @@ function deletePkg(k){
       if(pr.progress)delete pr.progress[k];
     }
   });
+  // Custom package is gone entirely — clean its shared reference edits & notes
+  delete ST.notesGlobal[k];
+  Object.keys(ST.refGlobal).forEach(rk=>{if(rk.startsWith(k+'__'))delete ST.refGlobal[rk]});
+  Object.keys(ST.refEditG).forEach(rk=>{if(rk.startsWith(k+'__'))delete ST.refEditG[rk]});
   save();renderAll();showToast('Package deleted');
 }
 function usePackage(k){
@@ -2750,6 +2751,45 @@ function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function safeUrl(u){u=(u||'').trim();return /^https?:\/\//i.test(u)?u:'#'}
 
 // ── Init ──
+// ── Shared knowledge stores & one-time migration ─────────────────────────────
+// Reference edits and My Notes used to live inside each project. They're system
+// knowledge, not customer data, so they now live globally (keyed pkg__phase).
+if(!ST.refGlobal)ST.refGlobal={};
+if(!ST.notesGlobal)ST.notesGlobal={};
+if(!ST.refEditG)ST.refEditG={};
+function migrateSharedKnowledge(){
+  if(!ST.refGlobal)ST.refGlobal={};
+  if(!ST.notesGlobal)ST.notesGlobal={};
+  if(!ST.refEditG)ST.refEditG={};
+  // Active project first — if two projects edited the same phase, the active one's version wins
+  const ids=Object.keys(ST.projects||{});
+  if(ST.activeProject&&ids.includes(ST.activeProject)){ids.splice(ids.indexOf(ST.activeProject),1);ids.unshift(ST.activeProject)}
+  let moved=false;
+  ids.forEach(pid=>{
+    const p=ST.projects[pid];if(!p)return;
+    Object.entries(p.refOverrides||{}).forEach(([k,v])=>{
+      if(!ST.refGlobal[k]){ST.refGlobal[k]=JSON.parse(JSON.stringify(v));moved=true}
+    });
+    Object.entries(p.myNotes||{}).forEach(([pk,phMap])=>{
+      Object.entries(phMap||{}).forEach(([ph,arr])=>{
+        if(!Array.isArray(arr)||!arr.length)return;
+        if(!ST.notesGlobal[pk])ST.notesGlobal[pk]={};
+        if(!ST.notesGlobal[pk][ph])ST.notesGlobal[pk][ph]=[];
+        const have=new Set(ST.notesGlobal[pk][ph].map(n=>n.id));
+        arr.forEach(n=>{if(!have.has(n.id)){ST.notesGlobal[pk][ph].push(n);moved=true}});
+      });
+    });
+    // Clear the per-project copies so a deleted global note can never resurrect from them
+    if(p.refOverrides&&Object.keys(p.refOverrides).length)p.refOverrides={};
+    if(p.myNotes&&Object.keys(p.myNotes).length)p.myNotes={};
+    if(p.refEditMode&&Object.keys(p.refEditMode).length)p.refEditMode={};
+  });
+  // Keep merged notes in chronological order (ids are timestamps)
+  Object.values(ST.notesGlobal).forEach(phMap=>Object.values(phMap).forEach(arr=>arr.sort((a,b)=>(a.id>b.id?1:-1))));
+  if(moved)save();
+}
+migrateSharedKnowledge();
+
 renderAll();
 applyTheme(getTheme());
 // Land on the Overview when there's no active project selected
