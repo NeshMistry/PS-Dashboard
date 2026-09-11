@@ -26,7 +26,7 @@
   /*  Each group controls one area. Edit the number, save, refresh.   */
   /* ────────────────────────────────────────────────────────────── */
   --fs-logo:        15px;  /* DELINEA logo */
-  --fs-logo-sub:    12px;  /* logo subtitle */
+  --fs-logo-sub:    10px;  /* logo subtitle */
   --fs-sb-heading:  12px;  /* sidebar section headings: VIEWS, PROJECTS, PHASES */
   --fs-sb-project:  13.5px;/* project (customer) names in sidebar */
   --fs-sb-body:     12px;  /* sidebar buttons + package / phase names */
@@ -164,6 +164,17 @@ button{cursor:pointer}
 .cb.ip{background:var(--warn-ln);border-color:var(--warn-ln)}
 .cb.ip::after{content:'';width:7px;height:2px;background:#fff;border-radius:1px}
 .task-lbl.ip{color:var(--warn-fg);font-weight:500}
+/* ── Cover with the customer (talking points) ── */
+.talk-block{margin-top:12px;padding:10px 12px;background:var(--warn);border:1px solid var(--warn-ln);border-left-width:3px;border-radius:var(--radius)}
+.talk-hd{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--warn-fg);margin-bottom:7px;display:flex;align-items:center;gap:8px}
+.talk-count{font-weight:600;font-size:10.5px;background:var(--surface);color:var(--text2);padding:1px 8px;border-radius:20px;border:1px solid var(--border);text-transform:none;letter-spacing:0}
+.talk-row{display:flex;align-items:flex-start;gap:9px;padding:4px 0}
+.talk-row .talk-act{opacity:0;width:22px;height:22px;font-size:11px}
+.talk-row:hover .talk-act{opacity:1}
+.talk-lbl{font-size:var(--fs-main-body);color:var(--text);line-height:1.45;flex:1;cursor:pointer}
+.talk-lbl.done{text-decoration:line-through;color:var(--text3)}
+.talk-add{margin-top:6px;font-size:11px;padding:4px 10px;border:1px dashed var(--warn-ln);border-radius:20px;background:none;color:var(--warn-fg);cursor:pointer;transition:all .12s;opacity:.75}
+.talk-add:hover{opacity:1}
 .task-lbl{font-size:var(--fs-main-body);color:var(--text);line-height:1.5;flex:1;cursor:pointer}
 .task-lbl.done{text-decoration:line-through;color:var(--text3)}
 .lim-badge{font-size:10px;color:var(--text3);white-space:nowrap;background:var(--surface2);padding:1px 6px;border-radius:20px;border:1px solid var(--border);align-self:flex-start;margin-top:2px;flex-shrink:0}
@@ -697,6 +708,36 @@ function notesFor(pkgKey,phId){
   if(!ST.notesGlobal[pkgKey])ST.notesGlobal[pkgKey]={};
   if(!ST.notesGlobal[pkgKey][phId])ST.notesGlobal[pkgKey][phId]=[];
   return ST.notesGlobal[pkgKey][phId];
+}
+// ── Talking points ("Cover with the customer") — global definitions AND global
+// tick state for now; if per-customer state is ever needed, move `done` into a
+// per-project map keyed by point id.
+function talkFor(pkgKey,phId){
+  if(!ST.talkGlobal)ST.talkGlobal={};
+  const k=pkgKey+'__'+phId;
+  if(!Array.isArray(ST.talkGlobal[k]))ST.talkGlobal[k]=[];
+  return ST.talkGlobal[k];
+}
+function tpAdd(pkgKey,phId){
+  const t=prompt('What should be covered with the customer at this point?\ne.g. Showcase Collections, Approval workflows');
+  if(t===null||!t.trim())return;
+  talkFor(pkgKey,phId).push({id:'tp'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),text:t.trim(),done:false});
+  save();renderDashboard();
+}
+function tpToggle(pkgKey,phId,id){
+  const p=talkFor(pkgKey,phId).find(x=>x.id===id);if(!p)return;
+  p.done=!p.done;save();renderDashboard();
+}
+function tpRename(pkgKey,phId,id){
+  const p=talkFor(pkgKey,phId).find(x=>x.id===id);if(!p)return;
+  const t=prompt('Edit point:',p.text);if(t===null||!t.trim())return;
+  p.text=t.trim();save();renderDashboard();
+}
+function tpDel(pkgKey,phId,id){
+  const list=talkFor(pkgKey,phId);const p=list.find(x=>x.id===id);if(!p)return;
+  if(!confirm('Remove “'+p.text+'” from this phase\'s cover list? (Applies to all projects.)'))return;
+  ST.talkGlobal[pkgKey+'__'+phId]=list.filter(x=>x.id!==id);
+  save();renderDashboard();
 }
 function totalTasks(pkg){return pkg.phases.reduce((a,p)=>a+p.tasks.length,0)}
 function doneTasks(pkg,pkgKey){
@@ -1311,7 +1352,8 @@ function exportData(){
     prereqs:ST.prereqs,
     toolbox:ST.toolbox,
     refGlobal:ST.refGlobal,
-    notesGlobal:ST.notesGlobal
+    notesGlobal:ST.notesGlobal,
+    talkGlobal:ST.talkGlobal
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1350,6 +1392,7 @@ function importData(e){
       if(Array.isArray(data.toolbox))ST.toolbox=data.toolbox;
       if(data.refGlobal)ST.refGlobal=data.refGlobal;
       if(data.notesGlobal)ST.notesGlobal=data.notesGlobal;
+      if(data.talkGlobal)ST.talkGlobal=data.talkGlobal;
       if(data.projects){
         ST.projects={...ST.projects,...data.projects};
         // Make sure each imported project has the right shape
@@ -2236,6 +2279,26 @@ function renderDashboard(){
           }
           tc.appendChild(row);
         });
+        // ── "Cover with the customer" — global demo/talking points for this phase ──
+        const tpts=talkFor(pkgKey,ph.id);
+        const tpWrap=document.createElement('div');
+        tpWrap.className='talk-block';
+        let tpH='';
+        if(tpts.length){
+          const covered=tpts.filter(x=>x.done).length;
+          tpH+='<div class="talk-hd">🗣 Cover with the customer <span class="talk-count">'+covered+'/'+tpts.length+' covered</span></div>';
+          tpts.forEach(pt=>{
+            tpH+='<div class="talk-row">'
+              +'<div class="cb talk-cb'+(pt.done?' on':'')+'" onclick="tpToggle(\''+pkgKey+'\',\''+ph.id+'\',\''+pt.id+'\')"></div>'
+              +'<div class="talk-lbl'+(pt.done?' done':'')+'" onclick="tpToggle(\''+pkgKey+'\',\''+ph.id+'\',\''+pt.id+'\')">'+escHtml(pt.text)+'</div>'
+              +'<button class="ko-mini talk-act" title="Edit" onclick="tpRename(\''+pkgKey+'\',\''+ph.id+'\',\''+pt.id+'\')">✎</button>'
+              +'<button class="ko-mini danger talk-act" title="Remove (all projects)" onclick="tpDel(\''+pkgKey+'\',\''+ph.id+'\',\''+pt.id+'\')">✕</button>'
+              +'</div>';
+          });
+        }
+        tpH+='<button class="talk-add" onclick="tpAdd(\''+pkgKey+'\',\''+ph.id+'\')">+ Cover point</button>';
+        tpWrap.innerHTML=tpH;
+        tc.appendChild(tpWrap);
         body.appendChild(tc);
       }
 
@@ -2474,6 +2537,7 @@ function deletePkg(k){
   });
   // Custom package is gone entirely — clean its shared reference edits & notes
   delete ST.notesGlobal[k];
+  Object.keys(ST.talkGlobal||{}).forEach(rk=>{if(rk.startsWith(k+'__'))delete ST.talkGlobal[rk]});
   Object.keys(ST.refGlobal).forEach(rk=>{if(rk.startsWith(k+'__'))delete ST.refGlobal[rk]});
   Object.keys(ST.refEditG).forEach(rk=>{if(rk.startsWith(k+'__'))delete ST.refEditG[rk]});
   save();renderAll();showToast('Package deleted');
@@ -2757,6 +2821,7 @@ function safeUrl(u){u=(u||'').trim();return /^https?:\/\//i.test(u)?u:'#'}
 if(!ST.refGlobal)ST.refGlobal={};
 if(!ST.notesGlobal)ST.notesGlobal={};
 if(!ST.refEditG)ST.refEditG={};
+if(!ST.talkGlobal)ST.talkGlobal={};   // 'pkg__phase' -> [{id,text,done}] — demo/talking points
 function migrateSharedKnowledge(){
   if(!ST.refGlobal)ST.refGlobal={};
   if(!ST.notesGlobal)ST.notesGlobal={};
