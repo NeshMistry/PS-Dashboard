@@ -4,18 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Delinea PS — Deployment Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20version%3D%221.1%22%20id%3D%22Layer_1%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20xmlns%3Axlink%3D%22http%3A//www.w3.org/1999/xlink%22%20x%3D%220px%22%20y%3D%220px%22%0A%09%20viewBox%3D%220%200%20216%20266%22%20style%3D%22enable-background%3Anew%200%200%20216%20266%3B%22%20xml%3Aspace%3D%22preserve%22%3E%0A%3Cstyle%20type%3D%22text/css%22%3E%0A%09.st0%7Bfill%3A%2300FF5A%3B%7D%0A%3C/style%3E%0A%3Cg%3E%0A%09%3Cpath%20class%3D%22st0%22%20d%3D%22M48.4%2C220.3H4.9V45.7h43.4V220.3z%20M98.9%2C5.5H48.4v40.2c0%2C0%2C22.6-0.1%2C37.9%2C0c12.3%2C0.1%2C19.4%2C0%2C28.1%2C1.9%0A%09%09c37.4%2C7.1%2C51.6%2C47.1%2C51.6%2C85.4s-14.2%2C78.2-51.6%2C85.4c-8.6%2C1.9-15.8%2C1.9-28.1%2C1.9c-15.4%2C0.1-37.9%2C0-37.9%2C0v40.2h50.5%0A%09%09c82.7%2C0%2C112.2-67.8%2C112.2-127.5S181.6%2C5.5%2C98.9%2C5.5z%22/%3E%0A%3C/g%3E%0A%3C/svg%3E">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#1B3A6B;--navy2:#0f2444b2;--red:#C8102E;--blue:#2E6DA4;--blue-lt:#EBF2F9;
-  --green:#1A7A4A;--green-lt:#EDFAF4;
-  --warn:#FFF8E7;--warn-ln:#D4860A;--crit:#FEF0EF;--crit-ln:#B91C1C;--tip-ln:#1A7A4A;
+  /* ── Delinea brand palette ─────────────────────────────────────────────
+     Primary: Delinea Purple #231556 · Delinea Green #00FF5A
+     Secondary: Dark Green #00B95A · Teal #00FFD1 · Dark Gray #54565A · Light Gray #D3D2D0
+     Tertiary (functional): Lavender #6058D1 · Sky Blue #56BAF6 · Turquoise #377E7F
+                            Orange #EA6D52 · Yellow #F9D749 · Dark Magenta #7F1A86
+     Light tints/dark shades below are derived only for surfaces & legibility. */
+  --navy:#231556;--on-navy:#FFFFFF;--navy2:#231556;--red:#00FF5A;--blue:#6058D1;--blue-lt:#EEECF7;
+  --tool:#6058D1;--brand-green:#00FF5A;
+  --green:#00B95A;--green-lt:#E6F8EE;
+  --warn:#FEF9E1;--warn-ln:#F9D749;--crit:#FDEEEA;--crit-ln:#EA6D52;--tip-ln:#00B95A;
   /* Foreground colours for tinted surfaces — these flip in dark mode */
-  --tip-fg:#0d4025;--warn-fg:#5c3600;--crit-fg:#6b0e0e;
-  --link-fg:#1B3A6B;--doc-hover:#D4E8F5;--code-fg:#c0392b;
-  --bg:#F4F5F7;--surface:#FFFFFF;--surface2:#F0F2F5;--surface3:#E8EBF0;
-  --border:#DDE1E7;--border2:#C8CDD6;
-  --text:#1A1D23;--text2:#4A5060;--text3:#8A90A0;
+  --tip-fg:#377E7F;--warn-fg:#7A6413;--crit-fg:#9A3A26;
+  --link-fg:#4462C9;--doc-hover:#E4E8F8;--code-fg:#7F1A86;
+  --bg:#F4F3F8;--surface:#FFFFFF;--surface2:#F1F0F6;--surface3:#E6E4EF;
+  --border:#DCDAE6;--border2:#C7C4D6;
+  --text:#231556;--text2:#54565A;--text3:#76787D;
   --radius:8px;--radius-lg:12px;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
   --shadow-md:0 4px 12px rgba(0,0,0,.10),0 2px 4px rgba(0,0,0,.06);
@@ -44,30 +52,39 @@
   --fs-ref-label:   10px;  /* reference section labels */
 }
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0D1117;--surface:#161B22;--surface2:#1C2128;--surface3:#252B34;
-  --border:#30363D;--border2:#444C56;--text:#E6EDF3;--text2:#8B949E;--text3:#6E7681;
-  --blue-lt:#1C2D40;--warn:#2D2008;--crit:#2D0D0D;--green-lt:#0D2818;
-  --tip-fg:#6ED6A8;--warn-fg:#E6B860;--crit-fg:#F1908C;
-  --link-fg:#7FB2EA;--doc-hover:#243B54;--code-fg:#FF8A80;
+  --navy:#00FF5A;--on-navy:#231556;--blue:#00FFD1;--tool:#00FFD1;--green:#00B95A;
+  --bg:#0C102A;--surface:#161838;--surface2:#1C1E44;--surface3:#252852;
+  --border:#2C2F5C;--border2:#3D4072;--text:#FFFFFF;--text2:#D3D2D0;--text3:#9C9DB3;
+  --blue-lt:#1F2150;--warn:#2B2610;--crit:#2E1712;--green-lt:#0E2B22;
+  --warn-ln:#F9D749;--warn-fg:#F9D749;--crit-ln:#EA6D52;--crit-fg:#F5A492;--tip-ln:#00B95A;--tip-fg:#00FF5A;
+  --link-fg:#56BAF6;--doc-hover:#22305A;--code-fg:#00FFD1;
 }}
 :root[data-theme="dark"]{
-  --bg:#0D1117;--surface:#161B22;--surface2:#1C2128;--surface3:#252B34;
-  --border:#30363D;--border2:#444C56;--text:#E6EDF3;--text2:#8B949E;--text3:#6E7681;
-  --blue-lt:#1C2D40;--warn:#2D2008;--crit:#2D0D0D;--green-lt:#0D2818;
-  --tip-fg:#6ED6A8;--warn-fg:#E6B860;--crit-fg:#F1908C;
-  --link-fg:#7FB2EA;--doc-hover:#243B54;--code-fg:#FF8A80;
+  --navy:#00FF5A;--on-navy:#231556;--blue:#00FFD1;--tool:#00FFD1;--green:#00B95A;
+  --bg:#0C102A;--surface:#161838;--surface2:#1C1E44;--surface3:#252852;
+  --border:#2C2F5C;--border2:#3D4072;--text:#FFFFFF;--text2:#D3D2D0;--text3:#9C9DB3;
+  --blue-lt:#1F2150;--warn:#2B2610;--crit:#2E1712;--green-lt:#0E2B22;
+  --warn-ln:#F9D749;--warn-fg:#F9D749;--crit-ln:#EA6D52;--crit-fg:#F5A492;--tip-ln:#00B95A;--tip-fg:#00FF5A;
+  --link-fg:#56BAF6;--doc-hover:#22305A;--code-fg:#00FFD1;
 }
 :root[data-theme="light"]{
-  --bg:#F4F5F7;--surface:#FFFFFF;--surface2:#F0F2F5;--surface3:#E8EBF0;
-  --border:#DDE1E7;--border2:#C8CDD6;--text:#1A1D23;--text2:#4A5060;--text3:#8A90A0;
-  --blue-lt:#EBF2F9;--warn:#FFF8E7;--crit:#FEF0EF;--green-lt:#EDFAF4;
-  --tip-fg:#0d4025;--warn-fg:#5c3600;--crit-fg:#6b0e0e;
-  --link-fg:#1B3A6B;--doc-hover:#D4E8F5;--code-fg:#c0392b;
+  --navy:#231556;--on-navy:#FFFFFF;--blue:#6058D1;--tool:#6058D1;--green:#00B95A;
+  --bg:#F4F3F8;--surface:#FFFFFF;--surface2:#F1F0F6;--surface3:#E6E4EF;
+  --border:#DCDAE6;--border2:#C7C4D6;--text:#231556;--text2:#54565A;--text3:#76787D;
+  --blue-lt:#EEECF7;--warn:#FEF9E1;--crit:#FDEEEA;--green-lt:#E6F8EE;
+  --warn-ln:#F9D749;--warn-fg:#7A6413;--crit-ln:#EA6D52;--crit-fg:#9A3A26;--tip-ln:#00B95A;--tip-fg:#377E7F;
+  --link-fg:#4462C9;--doc-hover:#E4E8F8;--code-fg:#7F1A86;
 }
+.theme-lbl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:5px}
+.theme-seg{display:flex;border:1px solid rgba(255,255,255,.2);border-radius:var(--radius);overflow:hidden}
+.theme-seg button{flex:1;background:none;border:none;color:rgba(255,255,255,.65);font-size:10.5px;padding:5px 0;cursor:pointer;font-family:inherit;transition:all .12s}
+.theme-seg button+button{border-left:1px solid rgba(255,255,255,.2)}
+.theme-seg button:hover{background:rgba(255,255,255,.08);color:#fff}
+.theme-seg button.on{background:#00FF5A;color:#231556;font-weight:700}
 .theme-toggle{background:none;border:1px solid rgba(255,255,255,.15);border-radius:var(--radius);padding:4px 9px;color:rgba(255,255,255,.6);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
 .theme-toggle:hover{background:rgba(255,255,255,.1);color:#fff}
 html{font-size:15px}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
 a{color:var(--navy);text-decoration:none}a:hover{text-decoration:underline}
 button,input,textarea,select{font-family:inherit}
 button{cursor:pointer}
@@ -81,9 +98,9 @@ button{cursor:pointer}
   display:flex;flex-direction:column;position:fixed;top:0;left:0;
   height:100vh;overflow-y:auto;z-index:200;transition:transform .2s
 }
-.sidebar-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.logo-mark{font-size:var(--fs-logo);font-weight:700;color:#fff;letter-spacing:.06em}
-.logo-sub{font-size:var(--fs-logo-sub);color:rgba(255,255,255,.35);margin-top:1px}
+.sidebar-logo{padding:18px 16px 12px;border-bottom:2px solid #00FF5A}
+.logo-mark{line-height:0}.logo-mark .brand-logo{height:22px;width:auto;display:block}
+.logo-sub{font-size:var(--fs-logo-sub);color:#D3D2D0;margin-top:7px;letter-spacing:.04em}
 .nav-section{font-size:var(--fs-sb-heading);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255, 255, 255, 0.63);padding:12px 16px 4px}
 .nav-btn{
   display:flex;align-items:center;gap:8px;width:100%;text-align:left;
@@ -91,9 +108,23 @@ button{cursor:pointer}
   color:rgba(255,255,255,.55);transition:all .12s;border-left:2px solid transparent;cursor:pointer
 }
 .nav-btn:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
-.nav-btn.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--red)}
+.nav-btn.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:#00FF5A}
+/* Boxed project cards */
+.proj-card{margin:7px 10px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);overflow:hidden;transition:border-color .15s,background .15s}
+.proj-card:hover{border-color:rgba(255,255,255,.28)}
+.proj-card.active{border-color:#00FF5A;background:rgba(255,255,255,.08);box-shadow:0 0 0 1px rgba(0,255,90,.18)}
+.proj-card.archived{opacity:.6}
+.proj-card>.nav-btn{border-left:none;padding-left:12px;padding-right:12px;border-radius:0}
+.proj-card>.nav-btn.active{background:transparent}
+.pc-bar{height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin:6px 0 1px 19px;overflow:hidden}
+.pc-fill{height:100%;background:#00FF5A;border-radius:2px;transition:width .3s}
+.pc-nest{border-top:1px solid rgba(255,255,255,.1);padding:4px 0 6px;background:rgba(12,16,42,.25)}
+.pc-nest .nav-btn{border-left:none}
 .nav-btn .nb-icon{width:14px;height:14px;flex-shrink:0;opacity:.6}
 .nav-btn.active .nb-icon{opacity:1}
+.on-edit{opacity:0;font-size:11px;padding:0 4px;color:rgba(255,255,255,.6);transition:opacity .12s}
+.nav-btn:hover .on-edit{opacity:1}
+.on-edit:hover{color:#00FF5A}
 .nav-btn .nb-sub{font-size:10px;color:rgba(255,255,255,.3);display:block;margin-top:0}
 .pkg-badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0}
 .sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08);font-size:var(--fs-sb-footer);color:rgba(255,255,255,.25);margin-top:auto}
@@ -117,8 +148,8 @@ button{cursor:pointer}
 .prog-pct{font-size:12px;font-weight:600;color:var(--navy);min-width:32px;text-align:right}
 .btn{font-size:12px;padding:5px 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all .12s}
 .btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
-.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
-.btn.primary:hover{background:var(--blue)}
+.btn.primary{background:var(--navy);color:var(--on-navy);border-color:var(--navy)}
+.btn.primary:hover{background:var(--blue);border-color:var(--blue)}
 .btn.danger{background:var(--crit);color:var(--crit-ln);border-color:var(--crit-ln)}
 .btn.sm{font-size:11px;padding:4px 9px}
 
@@ -140,7 +171,7 @@ button{cursor:pointer}
 .phase-card:hover{box-shadow:var(--shadow-md)}
 .phase-hdr{display:flex;align-items:center;gap:11px;padding:12px 15px;cursor:pointer;user-select:none;transition:background .12s}
 .phase-hdr:hover{background:var(--surface2)}
-.phase-num{width:24px;height:24px;border-radius:50%;flex-shrink:0;background:var(--navy);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.phase-num{width:24px;height:24px;border-radius:50%;flex-shrink:0;background:var(--navy);color:var(--on-navy);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:background .2s}
 .phase-num.done{background:var(--green)}
 .phase-title{flex:1;font-size:var(--fs-main-heading);font-weight:600;color:var(--text)}
 .phase-meta{display:flex;align-items:center;gap:8px}
@@ -162,7 +193,7 @@ button{cursor:pointer}
 .cb:hover{border-color:var(--navy)}.cb.on{background:var(--green);border-color:var(--green)}
 .cb.on::after{content:'';width:8px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px)}
 .cb.ip{background:var(--warn-ln);border-color:var(--warn-ln)}
-.cb.ip::after{content:'';width:7px;height:2px;background:#fff;border-radius:1px}
+.cb.ip::after{content:'';width:7px;height:2px;background:#231556;border-radius:1px}
 .task-lbl.ip{color:var(--warn-fg);font-weight:500}
 /* ── Cover with the customer (talking points) ── */
 .talk-block{margin-top:12px;padding:10px 12px;background:var(--warn);border:1px solid var(--warn-ln);border-left-width:3px;border-radius:var(--radius)}
@@ -175,8 +206,31 @@ button{cursor:pointer}
 .talk-lbl.done{text-decoration:line-through;color:var(--text3)}
 .talk-add{margin-top:6px;font-size:11px;padding:4px 10px;border:1px dashed var(--warn-ln);border-radius:20px;background:none;color:var(--warn-fg);cursor:pointer;transition:all .12s;opacity:.75}
 .talk-add:hover{opacity:1}
+.ref-shared{font-size:10px;font-weight:600;color:var(--tool);background:none;border:1px solid var(--tool);border-radius:20px;padding:1px 8px;cursor:pointer;white-space:nowrap}
+.ref-shared:hover{background:var(--tool);color:var(--on-navy)}
+.ref-shared-warn{font-size:11px;color:var(--tool);margin:-2px 0 7px}
+.ref-link-row{display:flex;gap:7px;margin-top:10px}
+.ref-link-sel{flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text)}
+.lib-search{margin-bottom:10px;max-width:520px}
+.lib-stats{font-size:11.5px;color:var(--text3);margin-bottom:12px}
+.lib-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px 15px;margin-bottom:10px;transition:box-shadow .3s,border-color .3s}
+.lib-card.focus{border-color:var(--tool);box-shadow:0 0 0 2px var(--tool)}
+.lib-card.editing{border-style:dashed;border-color:var(--border2)}
+.lib-top{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.lib-name{font-size:13px;font-weight:700;color:var(--text)}
+.lib-use{font-size:10.5px;font-weight:600;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:1px 8px}
+.lib-use.unused{color:var(--warn-fg);background:var(--warn);border-color:var(--warn-ln)}
+.lib-acts{margin-left:auto;display:flex;gap:5px}
+.lib-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+.lib-chip{font-size:10.5px;color:var(--text2);background:var(--blue-lt);border-radius:20px;padding:2px 9px}
+.lib-hint{font-size:11px;color:var(--text3);margin-top:6px}
+.lib-items-edit{margin-top:8px;font-family:inherit;line-height:1.5}
+.lib-variant-hd{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--text);margin:16px 0 8px;padding:8px 12px;background:var(--warn);border:1px solid var(--warn-ln);border-radius:var(--radius)}
+.lib-variant-hd span{font-weight:400;color:var(--text2);font-size:11px}
+.lib-variant-hd .btn{margin-left:auto}
+.shared-tag{font-size:10px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--tool);border:1px solid var(--tool);border-radius:20px;padding:0 7px;margin-left:auto}
 /* ── Coverage tab ── */
-.cov-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:6px;border-radius:9px;background:var(--warn-ln);color:#fff;font-size:10px;font-weight:700;line-height:1}
+.cov-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:6px;border-radius:9px;background:var(--warn-ln);color:#231556;font-size:10px;font-weight:700;line-height:1}
 .cov-intro{font-size:11.5px;color:var(--text3);margin-bottom:12px;line-height:1.5}
 .cov-empty{font-size:12.5px;color:var(--text3);padding:18px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius);margin-bottom:12px}
 .cov-area{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warn-ln);border-radius:var(--radius);padding:11px 13px;margin-bottom:12px}
@@ -192,8 +246,8 @@ button{cursor:pointer}
 .ref-link-btn{width:18px;height:18px;flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--text3);padding:1px;border-radius:3px;display:flex;align-items:center;justify-content:center;transition:all .15s;align-self:flex-start;margin-top:2px;opacity:0}
 .task-row:hover .ref-link-btn{opacity:1}
 .ref-link-btn:hover{background:var(--blue-lt);color:var(--navy)}
-.ko-link-btn{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;background:var(--blue-lt);border:1px solid #0891B2;cursor:pointer;color:#0891B2;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;transition:all .15s;align-self:flex-start;margin-top:1px;white-space:nowrap}
-.ko-link-btn:hover{background:#0891B2;color:#fff}
+.ko-link-btn{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;background:var(--blue-lt);border:1px solid var(--tool);cursor:pointer;color:var(--tool);padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:600;transition:all .15s;align-self:flex-start;margin-top:1px;white-space:nowrap}
+.ko-link-btn:hover{background:var(--tool);color:var(--on-navy)}
 .ref-section.hl-flash{animation:hl-flash .8s ease-out}
 @keyframes hl-flash{0%{background:var(--blue-lt);border-radius:var(--radius)}100%{background:transparent}}
 
@@ -268,11 +322,11 @@ textarea.ko-input{resize:vertical;line-height:1.5}
 .ko-ynrow{display:flex;gap:6px}
 .ko-yn{font-size:12px;font-weight:600;padding:6px 18px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;transition:all .12s}
 .ko-yn:hover{border-color:var(--border2)}
-.ko-yn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ko-yn.on{background:var(--navy);color:var(--on-navy);border-color:var(--navy)}
 .ko-chips{display:flex;flex-wrap:wrap;gap:7px}
 .ko-chip{font-size:12px;font-weight:500;padding:6px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;transition:all .12s}
 .ko-chip:hover{border-color:var(--border2)}
-.ko-chip.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+.ko-chip.on{background:var(--navy);color:var(--on-navy);border-color:var(--navy);font-weight:600}
 .ko-add{margin-top:12px;width:100%;font-size:12px;padding:9px;border:1px dashed var(--border2);border-radius:var(--radius);background:none;color:var(--text3);cursor:pointer;transition:all .12s}
 .ko-add:hover{color:var(--text2);border-color:var(--text2)}
 .ko-erow{display:flex;gap:6px;align-items:center}
@@ -313,7 +367,7 @@ textarea.ko-input{resize:vertical;line-height:1.5}
 .pn-tabs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
 .pn-tab{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .12s}
 .pn-tab:hover{border-color:var(--border2)}
-.pn-tab.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+.pn-tab.on{background:var(--navy);color:var(--on-navy);border-color:var(--navy);font-weight:600}
 .pn-tab-act{background:none;border:none;color:rgba(255,255,255,.75);cursor:pointer;font-size:11px;padding:0 1px;line-height:1}
 .pn-tab-act:hover{color:#fff}
 .pn-tab-add{font-size:12px;padding:6px 12px;border-radius:20px;border:1px dashed var(--border2);background:none;color:var(--text3);cursor:pointer;transition:all .12s}
@@ -347,13 +401,13 @@ span.tb-name{color:var(--text)}
 .divider{height:1px;background:var(--border);margin:16px 0}
 .phase-editor-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:10px;overflow:hidden}
 .phase-editor-hdr{display:flex;align-items:center;gap:9px;padding:10px 13px;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer}
-.phase-editor-num{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.phase-editor-num{width:22px;height:22px;border-radius:50%;background:var(--navy);color:var(--on-navy);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .phase-editor-title{flex:1;font-size:12.5px;font-weight:600;color:var(--text)}
 .phase-editor-body{padding:13px;display:none}.phase-editor-body.open{display:block}
 .pill-select{display:flex;gap:5px;flex-wrap:wrap}
 .pill{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;transition:all .12s}
 .pill:hover{border-color:var(--navy);color:var(--navy)}
-.pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pill.on{background:var(--navy);color:var(--on-navy);border-color:var(--navy)}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
 .empty-state svg{margin:0 auto 12px;display:block;opacity:.4}
 
@@ -365,7 +419,7 @@ span.tb-name{color:var(--text)}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
 
 /* ── Toast ── */
-.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;font-size:12.5px;padding:10px 16px;border-radius:var(--radius);z-index:999;transition:opacity .3s;box-shadow:var(--shadow-md)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:var(--on-navy);font-size:12.5px;padding:10px 16px;border-radius:var(--radius);z-index:999;transition:opacity .3s;box-shadow:var(--shadow-md)}
 .toast.hidden{opacity:0;pointer-events:none}
 
 /* ── Scrollbar ── */
@@ -415,7 +469,7 @@ span.tb-name{color:var(--text)}
 <!-- ── Sidebar ─────────────────────────────────────────────── -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-mark">DELINEA</div>
+    <div class="logo-mark"><svg class="brand-logo" aria-label="Delinea" viewBox="0 0 1179 268" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="Layer_1" overflow="hidden"><g><g><path d="M46.7 217.3 3.2 217.3 3.2 42.7 46.6 42.7 46.6 217.3ZM408.4 173.7 270 173.7C273 203.2 288.7 222.8 319.3 222.8 340.2 222.8 355.7 213.4 364.1 195.5L406.2 208.3C391.3 243.5 357.9 262.8 321.8 262.8 262.8 262.8 224.2 221.4 224.2 164 224.2 98.7 265.4 60.9 319.3 60.9 381.8 60.9 413 108.7 408.4 173.7ZM365.1 141.5C361.8 113.8 349.4 98.3 321.1 98.3 292.8 98.3 276.2 112.3 271 141.5L365.1 141.5ZM952.2 173.7 813.8 173.7C816.8 203.2 832.5 222.8 863.1 222.8 884 222.8 899.5 213.4 907.9 195.5L950 208.3C935.1 243.5 901.7 262.8 865.6 262.8 806.6 262.8 768 221.4 768 164 768 98.7 809.2 60.9 863.1 60.9 925.6 60.9 956.8 108.7 952.2 173.7ZM908.9 141.5C905.6 113.8 893.2 98.3 864.9 98.3 836.6 98.3 820 112.3 814.8 141.5L908.9 141.5ZM427.5 257.5 470.2 257.5 470.2 2.5 427.5 2.5 427.5 257.5ZM501.2 257.5 543.8 257.5 543.8 66.2 501.2 66.2 501.2 257.5ZM501.2 47.2 543.8 47.2 543.8 2.5 501.2 2.5 501.2 47.2ZM675.4 60.9C650.3 60.9 629.3 70.6 612.9 92L612.9 66.2 574.8 66.2 574.8 257.4 618 257.4 618 159.2C618 126.5 630.1 100.9 662.8 100.9 698.2 100.9 707.4 130.3 707.4 165.4L707.4 257.4 750.6 257.4 750.6 150.7C750.6 104.2 732 60.9 675.4 60.9ZM1134.2 140.1 1134.2 257.5 1096.8 257.5 1096.8 231.7C1079.5 254.5 1058.2 262.8 1029.6 262.8 988.4 262.8 965.5 236.8 965.5 205.1 965.5 175.7 980.5 157.5 1009.1 147.9 1034 140 1065.5 136.4 1092.3 132.4 1090.5 108.3 1077.2 100.2 1053.2 100.2 1037.9 100.2 1017.3 106.5 1011.4 126.9L972.4 114.7C977.2 98.6 986.1 85.6 999.4 75.8 1012.7 66 1030.6 61.1 1053.1 61.1 1113.5 61.1 1130.7 94.6 1133 117.4 1133.9 124.2 1134.2 131.8 1134.2 140.1ZM1091.9 167.3C1077.8 169.5 1063.5 171.8 1048.2 174.8 1029.3 178.6 1007.5 185.1 1007.5 204.4 1007.5 217.3 1016.9 228.7 1038.3 228.7 1069.8 228.7 1090.3 207.6 1091.5 178.3 1091.7 174.2 1091.9 167.3 1091.9 167.3ZM1091.9 166.6C1091.9 166.3 1091.9 166.2 1091.9 166.6L1091.9 166.6ZM1091.9 167 1091.9 166.6 1091.9 167ZM97.2 2.5 46.7 2.5 46.7 42.7C46.7 42.7 69.3 42.6 84.6 42.7 96.9 42.8 104 42.7 112.7 44.6 150.1 51.7 164.3 91.7 164.3 130 164.3 168.3 150.1 208.2 112.7 215.4 104.1 217.3 96.9 217.3 84.6 217.3 69.2 217.4 46.7 217.3 46.7 217.3L46.7 257.5 97.2 257.5C179.9 257.5 209.4 189.7 209.4 130 209.4 70.3 179.8 2.5 97.2 2.5Z" fill="#FFFFFF"/></g></g></svg></div>
     <div class="logo-sub">PS Deployment Dashboard</div>
   </div>
   <div style="flex:1;overflow-y:auto">
@@ -436,9 +490,18 @@ span.tb-name{color:var(--text)}
       <svg class="nb-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1h7l3 3v11H3z"/><path d="M9 1v4h4M5.5 8.5l1.5 1.5 3-3"/></svg>
       Pre-Requisites
     </button>
+    <button class="nav-btn" id="nav-library" onclick="showView('library')">
+      <svg class="nb-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2.5h4.5a1.5 1.5 0 011.5 1.5v10a1 1 0 00-1-1H2zM14 2.5H9.5A1.5 1.5 0 008 4v10a1 1 0 011-1h5z"/></svg>
+      Reference Library
+    </button>
     <button class="nav-btn" id="nav-toolbox" onclick="showView('toolbox')">
       <svg class="nb-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6h14v8H1z"/><path d="M5 6V4a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0111 4v2M1 9.5h14"/><path d="M7 9v1.5h2V9"/></svg>
       Toolbox
+    </button>
+    <button class="nav-btn" id="nav-onenote" onclick="openOneNote()" title="Open your OneNote scrapbook page">
+      <svg class="nb-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5"/><path d="M5.5 5v6l5-6v6"/></svg>
+      <span style="flex:1">My OneNote notes</span>
+      <span class="on-edit" title="Change the OneNote link" onclick="event.stopPropagation();setOneNoteLink()">✎</span>
     </button>
 
     <div class="nav-section" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding-right:10px">
@@ -463,9 +526,12 @@ span.tb-name{color:var(--text)}
     </button>
   </div>
   <div class="sidebar-footer">
-    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">
-      <span id="theme-icon">☀</span> <span id="theme-label">Light mode</span>
-    </button>
+    <div class="theme-lbl">Default theme</div>
+    <div class="theme-seg" id="theme-seg">
+      <button data-t="light" onclick="setTheme('light')">☀ Light</button>
+      <button data-t="dark" onclick="setTheme('dark')">☾ Dark</button>
+      <button data-t="auto" onclick="setTheme('auto')">◐ System</button>
+    </div>
     <div style="margin-top:8px">Delinea Professional Services</div>
     <div style="margin-top:2px"><a href="https://docs.delinea.com" target="_blank">docs.delinea.com ↗</a></div>
   </div>
@@ -536,6 +602,19 @@ span.tb-name{color:var(--text)}
         </div>
       </div>
       <div id="prereq-content"></div>
+    </div>
+
+    <!-- Reference Library view -->
+    <div class="view" id="view-library">
+      <div class="editor-header">
+        <div>
+          <div class="editor-title">Reference Library</div>
+          <div class="editor-sub">Every reference topic, stored once. Edit a topic here and every phase in every package that links it updates instantly.</div>
+        </div>
+        <div style="display:flex;gap:8px"><button class="btn sm primary" onclick="libNew()">+ New topic</button></div>
+      </div>
+      <input class="ko-input lib-search" id="lib-search" placeholder="Search topics and their content…" oninput="libSearch(this.value)">
+      <div id="library-content"></div>
     </div>
 
     <!-- Toolbox view -->
@@ -732,9 +811,43 @@ function notesFor(pkgKey,phId){
 // ── Talking points ("Cover with the customer") — global definitions AND global
 // tick state for now; if per-customer state is ever needed, move `done` into a
 // per-project map keyed by point id.
+// Platform & SS Xcelerate I / II / III (Platinum) share cover points & coverage
+// by topic. X I/II Phase 3 maps to Platinum Phase 3 (RPC & Discovery); Platinum
+// Phases 4 & 5 are Platinum-only scope and keep their own lists.
+const SHARED_PHASE_KEYS={
+  'xi__p1':'fam_pss__p1','xii__p1':'fam_pss__p1','plat__p1':'fam_pss__p1',
+  'xi__p2':'fam_pss__p2','xii__p2':'fam_pss__p2','plat__p2':'fam_pss__p2',
+  'xi__p3':'fam_pss__p3','xii__p3':'fam_pss__p3','plat__p3':'fam_pss__p3',
+  'xi__p4':'fam_pss__close','xii__p4':'fam_pss__close','plat__p6':'fam_pss__close'
+};
+function sharedKey(pkgKey,phId){const k=pkgKey+'__'+phId;return SHARED_PHASE_KEYS[k]||k}
+function isSharedPhase(pkgKey,phId){return !!SHARED_PHASE_KEYS[pkgKey+'__'+phId]}
+function mergeSharedCoverage(){
+  if(!ST.talkGlobal)ST.talkGlobal={};if(!ST.covGlobal)ST.covGlobal={};
+  const norm=t=>(t||'').trim().toLowerCase();let changed=false;
+  Object.entries(SHARED_PHASE_KEYS).forEach(([src,dst])=>{
+    const tp=ST.talkGlobal[src];
+    if(Array.isArray(tp)&&tp.length){
+      const out=ST.talkGlobal[dst]||(ST.talkGlobal[dst]=[]);
+      tp.forEach(p=>{const ex=out.find(x=>norm(x.text)===norm(p.text));if(ex){if(p.done)ex.done=true}else out.push(p)});
+    }
+    if(src in ST.talkGlobal){delete ST.talkGlobal[src];changed=true}
+    const cv=ST.covGlobal[src];
+    if(Array.isArray(cv)&&cv.length){
+      const out=ST.covGlobal[dst]||(ST.covGlobal[dst]=[]);
+      cv.forEach(a=>{
+        const ex=out.find(x=>norm(x.name)===norm(a.name));
+        if(!ex){out.push(a);return}
+        (a.items||[]).forEach(it=>{const ei=ex.items.find(x=>norm(x.text)===norm(it.text));if(ei){if(it.done)ei.done=true}else ex.items.push(it)});
+      });
+    }
+    if(src in ST.covGlobal){delete ST.covGlobal[src];changed=true}
+  });
+  if(changed)save();
+}
 function talkFor(pkgKey,phId){
   if(!ST.talkGlobal)ST.talkGlobal={};
-  const k=pkgKey+'__'+phId;
+  const k=sharedKey(pkgKey,phId);
   if(!Array.isArray(ST.talkGlobal[k]))ST.talkGlobal[k]=[];
   return ST.talkGlobal[k];
 }
@@ -756,14 +869,14 @@ function tpRename(pkgKey,phId,id){
 function tpDel(pkgKey,phId,id){
   const list=talkFor(pkgKey,phId);const p=list.find(x=>x.id===id);if(!p)return;
   if(!confirm('Remove “'+p.text+'” from this phase\'s cover list? (Applies to all projects.)'))return;
-  ST.talkGlobal[pkgKey+'__'+phId]=list.filter(x=>x.id!==id);
+  ST.talkGlobal[sharedKey(pkgKey,phId)]=list.filter(x=>x.id!==id);
   save();renderDashboard();
 }
 // ── Coverage areas — deeper walkthroughs (e.g. Remote/Web Applications) per phase.
 // Global definitions AND ticks, same model as talking points, one level deeper.
 function covFor(pkgKey,phId){
   if(!ST.covGlobal)ST.covGlobal={};
-  const k=pkgKey+'__'+phId;
+  const k=sharedKey(pkgKey,phId);
   if(!Array.isArray(ST.covGlobal[k]))ST.covGlobal[k]=[];
   return ST.covGlobal[k];
 }
@@ -786,7 +899,7 @@ function cvRenameArea(pkgKey,phId,aid){
 function cvDelArea(pkgKey,phId,aid){
   const a=cvArea(pkgKey,phId,aid);if(!a)return;
   if(!confirm('Remove the “'+a.name+'” area and its '+a.items.length+' item(s)? (Applies to all projects.)'))return;
-  ST.covGlobal[pkgKey+'__'+phId]=covFor(pkgKey,phId).filter(x=>x.id!==aid);
+  ST.covGlobal[sharedKey(pkgKey,phId)]=covFor(pkgKey,phId).filter(x=>x.id!==aid);
   save();renderDashboard();
 }
 function cvAddItem(pkgKey,phId,aid){
@@ -815,7 +928,7 @@ function cvDelItem(pkgKey,phId,aid,iid){
 }
 function renderCoverageTab(tc,pkgKey,phId){
   const areas=covFor(pkgKey,phId);
-  let h='<div class="cov-intro">Deeper areas to walk through with the customer during this phase — separate from the delivery tasks, shared across all projects.</div>';
+  let h='<div class="cov-intro">Deeper areas to walk through with the customer during this phase — separate from the delivery tasks, shared across all projects'+(isSharedPhase(pkgKey,phId)?' <strong>and across Platform &amp; SS Xcelerate I, II and III</strong>':'')+'.</div>';
   if(!areas.length){
     h+='<div class="cov-empty">No coverage areas yet for this phase. Add one — e.g. “Remote Applications / Web Applications” — then list the steps you demo inside it.</div>';
   }
@@ -1340,6 +1453,7 @@ function importPackageText(text){
   if(dup&&!confirm('A package called “'+pkg.label+'” already exists. Import anyway as a separate copy?'))return null;
   const k='custom_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   ST.userPkgs[k]=pkg;
+  migrateRefTopics();   // identical sections link to existing shared topics
   save();
   return k;
 }
@@ -1356,7 +1470,9 @@ function importPackageFile(ev){
   reader.readAsText(file);
 }
 function exportPackage(k){
-  const p=ST.userPkgs[k];if(!p)return;
+  if(!ST.userPkgs[k])return;
+  const p=JSON.parse(JSON.stringify(ST.userPkgs[k]));
+  p.phases.forEach(ph=>{const r=getRef(k,ph.id);ph.ref={sections:r.sections.map(x=>({label:x.label,items:x.items.slice()})),tips:JSON.parse(JSON.stringify(r.tips)),docs:JSON.parse(JSON.stringify(r.docs))}});
   const data={type:'delinea-ps-package',version:1,exported:new Date().toISOString(),pkg:p};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1364,6 +1480,134 @@ function exportPackage(k){
   const safe=p.label.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   a.href=url;a.download='delinea-pkg-'+safe+'.json';a.click();
   URL.revokeObjectURL(url);showToast('Package exported');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// REFERENCE LIBRARY — browse & edit shared topics
+// ════════════════════════════════════════════════════════════════════════════
+let libQuery='',libEditId=null,libFocus=null;
+function libSearch(v){libQuery=v;renderLibrary()}
+function openLibraryTopic(tid){libFocus=tid;libQuery='';const i=document.getElementById('lib-search');if(i)i.value='';showView('library')}
+function libNew(){
+  const T=topicsStore();const id=newTopicId();
+  T[id]={id,label:'New topic',items:[]};libEditId=id;libFocus=id;libQuery='';
+  const i=document.getElementById('lib-search');if(i)i.value='';
+  save();renderLibrary();
+}
+function libEdit(id){libEditId=id;renderLibrary()}
+function libCancel(){libEditId=null;renderLibrary()}
+function libSave(id){
+  const T=topicsStore();const t=T[id];if(!t)return;
+  const l=document.getElementById('lib-lbl-'+id),it=document.getElementById('lib-items-'+id);
+  if(l)t.label=l.value.trim()||'Untitled';
+  if(it)t.items=it.value.split('\n').map(x=>x.trim()).filter(Boolean);
+  libEditId=null;save();renderLibrary();showToast('Topic saved — every linked phase is updated');
+}
+function libDel(id){
+  const T=topicsStore();const t=T[id];if(!t)return;
+  const n=(topicUsage()[id]||[]).length;
+  if(!confirm('Delete topic “'+t.label+'”?'+(n?'\n\nIt will be removed from the '+n+' phase(s) that use it.':'')))return;
+  Object.values(ST.refGlobal||{}).forEach(lay=>{if(isLinkedLayout(lay))lay.sections=lay.sections.filter(l=>l.topic!==id)});
+  delete T[id];if(libEditId===id)libEditId=null;
+  save();renderLibrary();showToast('Topic deleted');
+}
+function libMerge(lblKey){
+  const T=topicsStore();const use=topicUsage();
+  const ids=Object.keys(T).filter(id=>normLbl(T[id].label)===lblKey);
+  if(ids.length<2)return;
+  ids.sort((a,b)=>(use[b]||[]).length-(use[a]||[]).length);
+  const keep=ids[0],others=ids.slice(1);
+  const items=T[keep].items.slice();const seen=new Set(items.map(x=>x.trim().toLowerCase()));
+  others.forEach(o=>T[o].items.forEach(x=>{const k=x.trim().toLowerCase();if(!seen.has(k)){seen.add(k);items.push(x)}}));
+  const phases=ids.reduce((a,id)=>a+(use[id]||[]).length,0);
+  if(!confirm('Merge '+ids.length+' variants of “'+T[keep].label+'” into one topic?\n\nThe merged topic will have '+items.length+' items (all unique points from every variant) and all '+phases+' phases will use it. You can tidy the wording afterwards.'))return;
+  T[keep].items=items;
+  Object.values(ST.refGlobal||{}).forEach(lay=>{
+    if(!isLinkedLayout(lay))return;
+    const out=[];lay.sections.forEach(l=>{const t=others.includes(l.topic)?keep:l.topic;if(!out.some(x=>x.topic===t))out.push({topic:t})});
+    lay.sections=out;
+  });
+  others.forEach(o=>delete T[o]);
+  libFocus=keep;save();renderLibrary();showToast('Variants merged');
+}
+function renderLibrary(){
+  const el=document.getElementById('library-content');if(!el)return;
+  const T=topicsStore();const use=topicUsage();
+  const q=libQuery.trim().toLowerCase();
+  let ids=Object.keys(T);
+  const total=ids.length,unused=ids.filter(id=>!(use[id]||[]).length).length;
+  if(q)ids=ids.filter(id=>T[id].label.toLowerCase().includes(q)||T[id].items.some(x=>x.toLowerCase().includes(q)));
+  const groups={};ids.forEach(id=>{(groups[normLbl(T[id].label)]=groups[normLbl(T[id].label)]||[]).push(id)});
+  const keys=Object.keys(groups).sort((a,b)=>T[groups[a][0]].label.localeCompare(T[groups[b][0]].label));
+  let h='<div class="lib-stats">'+total+' topics · '+(total-unused)+' in use'+(unused?' · '+unused+' unused':'')+(q?' · showing '+ids.length+' matching “'+escHtml(libQuery)+'”':'')+'</div>';
+  if(!ids.length)h+='<div class="empty-state" style="padding:28px">'+(q?'No topics match your search.':'No topics yet.')+'</div>';
+  keys.forEach(gk=>{
+    const g=groups[gk];
+    if(g.length>1){
+      h+='<div class="lib-variant-hd">'+escHtml(T[g[0]].label)+' — '+g.length+' variants <span>Different packages use slightly different versions.</span>'
+        +'<button class="btn sm" onclick="libMerge(\''+escHtml(gk).replace(/'/g,'&#39;')+'\')">⇢ Merge variants</button></div>';
+    }
+    g.sort((a,b)=>(use[b]||[]).length-(use[a]||[]).length).forEach(id=>{
+      const t=T[id],u=use[id]||[];
+      if(id===libEditId){
+        h+='<div class="lib-card editing" id="libt-'+id+'">'
+          +'<input class="ko-input" id="lib-lbl-'+id+'" value="'+escHtml(t.label)+'" placeholder="Topic heading">'
+          +'<textarea class="ko-input lib-items-edit" id="lib-items-'+id+'" rows="'+Math.max(4,t.items.length+1)+'" placeholder="One point per line. Wrap commands or values in `backticks` for code styling.">'+escHtml(t.items.join('\n'))+'</textarea>'
+          +'<div class="lib-hint">One point per line'+(u.length>1?' · saving updates all '+u.length+' phases that use this topic':'')+'</div>'
+          +'<div style="display:flex;gap:7px;margin-top:9px"><button class="btn sm primary" onclick="libSave(\''+id+'\')">✓ Save</button><button class="btn sm" onclick="libCancel()">Cancel</button><button class="btn sm danger" style="margin-left:auto" onclick="libDel(\''+id+'\')">Delete topic</button></div>'
+          +'</div>';
+        return;
+      }
+      h+='<div class="lib-card'+(id===libFocus?' focus':'')+'" id="libt-'+id+'"><div class="lib-top">'
+        +'<span class="lib-name">'+escHtml(t.label)+'</span>'
+        +(u.length?'<span class="lib-use">'+u.length+' phase'+(u.length===1?'':'s')+'</span>':'<span class="lib-use unused">Unused</span>')
+        +'<span class="lib-acts"><button class="ko-mini" title="Edit topic" onclick="libEdit(\''+id+'\')">✎</button><button class="ko-mini danger" title="Delete topic" onclick="libDel(\''+id+'\')">✕</button></span></div>';
+      t.items.filter(x=>x.trim()).forEach(x=>{h+='<div class="ref-item">'+escHtml(x).replace(/`([^`]+)`/g,'<code>$1</code>')+'</div>'});
+      if(!t.items.length)h+='<div class="lib-hint">No points yet — click ✎ to add some.</div>';
+      if(u.length){
+        const byPkg={};u.forEach(x=>{(byPkg[x.pkgLabel]=byPkg[x.pkgLabel]||[]).push(x.phNum)});
+        h+='<div class="lib-chips">'+Object.entries(byPkg).map(([pl,nums])=>'<span class="lib-chip">'+escHtml(pl)+' · Ph '+nums.sort((a,b)=>a-b).join(', ')+'</span>').join('')+'</div>';
+      } else {
+        h+='<div class="lib-hint">Link it to a phase from that phase\'s Reference tab → ✏ Edit → “Link a topic from the Reference Library”.</div>';
+      }
+      h+='</div>';
+    });
+  });
+  el.innerHTML=h;
+  if(libFocus){const f=document.getElementById('libt-'+libFocus);if(f)setTimeout(()=>f.scrollIntoView({behavior:'smooth',block:'center'}),60);libFocus=null}
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ONENOTE LINK — one link to your personal OneNote scrapbook page. The dashboard
+// only opens it; it never reads or writes OneNote content.
+// ════════════════════════════════════════════════════════════════════════════
+function parseOneNoteLink(raw){
+  // OneNote desktop "Copy Link to Page" copies a web link AND an onenote: desktop
+  // link; pasted into one box they run together, so split on "onenote:".
+  const t=(raw||'').trim();if(!t)return null;
+  const at=t.toLowerCase().indexOf('onenote:');
+  let web=at>=0?t.slice(0,at).trim():t,desk=at>=0?t.slice(at).trim().split(/\s+/)[0]:'';
+  web=web.split(/\s+/)[0]||'';
+  if(!/^https:\/\//i.test(web))web='';
+  if(!/^onenote:https:\/\//i.test(desk))desk='';
+  if(!web&&!desk)return null;
+  return {web,desk};
+}
+function setOneNoteLink(){
+  const cur=ST.onenoteLink?(ST.onenoteLink.web||ST.onenoteLink.desk):'';
+  const v=prompt('Paste the link to your OneNote page.\n\nIn OneNote: right-click the page tab → "Copy Link to Page", then paste here.\n(Leave empty and press OK to remove the link.)',cur);
+  if(v===null)return;
+  if(!v.trim()){delete ST.onenoteLink;save();showToast('OneNote link removed');return}
+  const l=parseOneNoteLink(v);
+  if(!l){alert('That doesn\'t look like a OneNote link — it should start with https:// or onenote:https://');return}
+  ST.onenoteLink=l;save();
+  showToast(l.desk?'OneNote link saved — opens in the OneNote app':'OneNote link saved — opens OneNote in your browser');
+}
+function openOneNote(){
+  const l=ST.onenoteLink;
+  if(!l||(!l.web&&!l.desk)){setOneNoteLink();return}
+  if(l.desk){window.location.href=l.desk;return}   // desktop app (browser asks to open OneNote)
+  window.open(l.web,'_blank','noopener');
 }
 
 // ── Project CRUD ──
@@ -1533,9 +1777,12 @@ function exportData(){
     prereqs:ST.prereqs,
     toolbox:ST.toolbox,
     refGlobal:ST.refGlobal,
+    refTopics:ST.refTopics,
     notesGlobal:ST.notesGlobal,
     talkGlobal:ST.talkGlobal,
-    covGlobal:ST.covGlobal
+    covGlobal:ST.covGlobal,
+    uiTheme:ST.uiTheme,
+    onenoteLink:ST.onenoteLink
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1573,9 +1820,12 @@ function importData(e){
       if(data.prereqs)ST.prereqs=data.prereqs;
       if(Array.isArray(data.toolbox))ST.toolbox=data.toolbox;
       if(data.refGlobal)ST.refGlobal=data.refGlobal;
+      if(data.refTopics)ST.refTopics=data.refTopics;
       if(data.notesGlobal)ST.notesGlobal=data.notesGlobal;
       if(data.talkGlobal)ST.talkGlobal=data.talkGlobal;
       if(data.covGlobal)ST.covGlobal=data.covGlobal;
+      if(data.uiTheme){ST.uiTheme=data.uiTheme;try{localStorage.setItem('delinea_theme',data.uiTheme)}catch(e){};applyTheme(data.uiTheme)}
+      if(data.onenoteLink){const l=parseOneNoteLink((data.onenoteLink.web||'')+' '+(data.onenoteLink.desk||''));if(l)ST.onenoteLink=l}
       if(data.projects){
         ST.projects={...ST.projects,...data.projects};
         // Make sure each imported project has the right shape
@@ -1597,6 +1847,8 @@ function importData(e){
         if(!ST.activeProject)ST.activeProject=pid;
       }
       migrateSharedKnowledge(); // lift knowledge out of older per-project backups
+      mergeSharedCoverage();
+      migrateRefTopics();
       save();renderAll();showToast('Backup imported successfully');
     }catch(err){alert('Could not read backup file. Make sure it is a valid Delinea PS backup.')}
   };
@@ -1809,7 +2061,7 @@ function renderOverview(){
   html+=`</div>`;
 
   // ── Grouped by status ──
-  const STATUS_DOT={'Not started':'#8A90A0','In progress':'#2E6DA4','On hold':'#D4860A','Complete':'#1A7A4A'};
+  const STATUS_DOT={'Not started':'#D3D2D0','In progress':'#56BAF6','On hold':'#F9D749','Complete':'#00FF5A'};
   const order=['In progress','Not started','On hold','Complete'];
 
   function fmtDate(d){
@@ -1890,6 +2142,7 @@ function showView(v){
   if(v==='packages')renderPackageManager();
   if(v==='prereqs')renderPrereqs();
   if(v==='toolbox')renderToolbox();
+  if(v==='library')renderLibrary();
   if(v==='overview')renderOverview();
   // Breadcrumb only makes sense on the project dashboard
   const crumb=document.getElementById('tb-crumb');
@@ -1903,15 +2156,96 @@ function showView(v){
 function refKey(pkgKey,phId){return pkgKey+'__'+phId}
 // Reference edits & My Notes are GLOBAL — shared knowledge about the system,
 // keyed by package+phase, the same across every project.
+// ── SHARED REFERENCE TOPICS ─────────────────────────────────────────────────
+// Reference sections are stored ONCE as topics in ST.refTopics. Each phase's
+// layout in ST.refGlobal is {sections:[{topic:id}], tips, docs}. getRef()
+// resolves the layout to the LIVE topic objects, so editing a section from any
+// phase (or the Reference Library) updates every phase that links that topic.
+function topicsStore(){if(!ST.refTopics)ST.refTopics={};return ST.refTopics}
+function normLbl(t){return (t||'').trim().toLowerCase()}
+function topicSig(label,items){return normLbl(label)+'\u0001'+JSON.stringify((items||[]).map(x=>String(x)))}
+function newTopicId(){return 'rt'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function findOrCreateTopic(label,items,sigIndex){
+  const T=topicsStore();const sig=topicSig(label,items);
+  let id=sigIndex?sigIndex[sig]:Object.keys(T).find(t=>topicSig(T[t].label,T[t].items)===sig);
+  if(id&&T[id])return id;
+  id=newTopicId();T[id]={id,label:String(label||'Untitled'),items:(items||[]).map(String)};
+  if(sigIndex)sigIndex[sig]=id;
+  return id;
+}
+function isLinkedLayout(lay){return !!lay&&Array.isArray(lay.sections)&&lay.sections.every(x=>x&&typeof x.topic==='string')}
+function linkLayoutFrom(ref,sigIndex){
+  const T=topicsStore();
+  return {
+    sections:(ref.sections||[]).map(sec=>(sec&&typeof sec.topic==='string'&&T[sec.topic])?{topic:sec.topic}:{topic:findOrCreateTopic(sec.label,sec.items,sigIndex)}),
+    tips:JSON.parse(JSON.stringify(ref.tips||[])),
+    docs:JSON.parse(JSON.stringify(ref.docs||[]))
+  };
+}
+function migrateRefTopics(){
+  topicsStore();if(!ST.refGlobal)ST.refGlobal={};
+  const T=ST.refTopics,idx={};
+  Object.keys(T).forEach(id=>{idx[topicSig(T[id].label,T[id].items)]=id});
+  let changed=false;const pk=allPkgs();
+  Object.keys(pk).forEach(k=>{(pk[k].phases||[]).forEach(ph=>{
+    const key=refKey(k,ph.id),cur=ST.refGlobal[key];
+    if(isLinkedLayout(cur))return;
+    ST.refGlobal[key]=linkLayoutFrom(cur||ph.ref||{sections:[],tips:[],docs:[]},idx);changed=true;
+  })});
+  if(changed)save();
+}
 function getRef(pkgKey,phId){
   const k=refKey(pkgKey,phId);
-  if(ST.refGlobal&&ST.refGlobal[k])return ST.refGlobal[k];
-  const ph=getPkg(pkgKey)?.phases?.find(x=>x.id===phId);
-  return ph?.ref||{sections:[],tips:[],docs:[]};
+  if(!ST.refGlobal)ST.refGlobal={};
+  let lay=ST.refGlobal[k];
+  if(!isLinkedLayout(lay)){
+    const ph=getPkg(pkgKey)?.phases?.find(x=>x.id===phId);
+    if(!ph&&!lay)return{sections:[],tips:[],docs:[]};
+    lay=linkLayoutFrom(lay||ph.ref||{sections:[],tips:[],docs:[]});
+    ST.refGlobal[k]=lay;save();
+  }
+  if(!lay.tips)lay.tips=[];if(!lay.docs)lay.docs=[];
+  const T=topicsStore();
+  return {sections:lay.sections.map(l=>T[l.topic]).filter(Boolean),tips:lay.tips,docs:lay.docs};
 }
 function setRef(pkgKey,phId,ref){
-  ST.refGlobal[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ref));
+  const T=topicsStore();
+  const sections=(ref.sections||[]).map(sec=>{
+    if(sec&&sec.id&&T[sec.id]){
+      if(T[sec.id]!==sec){T[sec.id].label=sec.label;T[sec.id].items=(sec.items||[]).map(String)}
+      return{topic:sec.id};
+    }
+    const id=newTopicId();T[id]={id,label:String(sec.label||'New Section'),items:(sec.items||[]).map(String)};
+    return{topic:id};
+  });
+  ST.refGlobal[refKey(pkgKey,phId)]={sections,tips:JSON.parse(JSON.stringify(ref.tips||[])),docs:JSON.parse(JSON.stringify(ref.docs||[]))};
   save();
+}
+// Where is each topic used?  tid -> [{pkgKey,phId,pkgLabel,phNum}]
+function topicUsage(){
+  const use={};const pk=allPkgs();
+  Object.entries(ST.refGlobal||{}).forEach(([k,lay])=>{
+    if(!isLinkedLayout(lay))return;
+    const i=k.indexOf('__');const pkgKey=k.slice(0,i),phId=k.slice(i+2);
+    const pkg=pk[pkgKey];if(!pkg)return;
+    const pi=pkg.phases.findIndex(p=>p.id===phId);if(pi<0)return;
+    lay.sections.forEach(l=>{(use[l.topic]=use[l.topic]||[]).push({pkgKey,phId,pkgLabel:pkg.label,phNum:pi+1})});
+  });
+  return use;
+}
+function refDiffersFromBuiltin(pkgKey,phId){
+  const ph=getPkg(pkgKey)?.phases?.find(x=>x.id===phId);if(!ph)return false;
+  const b=ph.ref||{},r=getRef(pkgKey,phId);
+  const A=JSON.stringify([r.sections.map(x=>[x.label,x.items]),r.tips,r.docs]);
+  const B=JSON.stringify([(b.sections||[]).map(x=>[x.label,x.items]),b.tips||[],b.docs||[]]);
+  return A!==B;
+}
+function refLinkTopic(pkgKey,phId,tid){
+  if(!tid||!topicsStore()[tid])return;
+  saveRefEditState(pkgKey,phId);getRef(pkgKey,phId);
+  const lay=ST.refGlobal[refKey(pkgKey,phId)];
+  if(lay.sections.some(l=>l.topic===tid)){showToast('That topic is already in this phase');return}
+  lay.sections.push({topic:tid});save();renderDashboard();showToast('Library topic linked');
 }
 function resetRef(pkgKey,phId){
   delete ST.refGlobal[refKey(pkgKey,phId)];
@@ -1920,18 +2254,11 @@ function resetRef(pkgKey,phId){
 function isRefEditing(pkgKey,phId){return !!(ST.refEditG&&ST.refEditG[refKey(pkgKey,phId)])}
 function setRefEditing(pkgKey,phId,val){
   ST.refEditG[refKey(pkgKey,phId)]=val;
-  // When entering edit mode, snapshot current ref into the global override so edits are isolated
-  if(val&&!ST.refGlobal[refKey(pkgKey,phId)]){
-    const ph=getPkg(pkgKey)?.phases?.find(x=>x.id===phId);
-    if(ph?.ref)ST.refGlobal[refKey(pkgKey,phId)]=JSON.parse(JSON.stringify(ph.ref));
-  }
   save();
 }
 // Save current edit form state before re-render
 function saveRefEditState(pkgKey,phId){
-  const k=refKey(pkgKey,phId);
-  const ref=ST.refGlobal[k];
-  if(!ref)return;
+  const ref=getRef(pkgKey,phId);   // live topic objects — writes go to the shared topics
   // Read section labels + items
   ref.sections.forEach((sec,si)=>{
     const lbl=document.getElementById('re-lbl-'+si);
@@ -1978,7 +2305,7 @@ function refSaveAndExit(pkgKey,phId){
   showToast('Reference saved');
 }
 function refReset(pkgKey,phId){
-  if(!confirm('Reset this phase reference to the built-in defaults? Your edits will be lost.'))return;
+  if(!confirm('Reset this phase\'s reference to the built-in defaults?\n\nShared topics in the Reference Library are NOT changed — this phase is simply re-linked to the original content.'))return;
   resetRef(pkgKey,phId);
   setRefEditing(pkgKey,phId,false);
   renderDashboard();
@@ -2066,6 +2393,7 @@ function renderAll(){
   if(currentView==='packages')renderPackageManager();
   if(currentView==='prereqs')renderPrereqs();
   if(currentView==='toolbox')renderToolbox();
+  if(currentView==='library')renderLibrary();
   if(currentView==='overview')renderOverview();
 }
 
@@ -2076,7 +2404,7 @@ function renderSidebar(){
   const allIds=Object.keys(ST.projects);
   const liveIds=allIds.filter(id=>!ST.projects[id].archived);
   const archivedIds=allIds.filter(id=>ST.projects[id].archived);
-  const STATUS_DOT={'Not started':'#8A90A0','In progress':'#2E6DA4','On hold':'#D4860A','Complete':'#1A7A4A'};
+  const STATUS_DOT={'Not started':'#D3D2D0','In progress':'#56BAF6','On hold':'#F9D749','Complete':'#00FF5A'};
 
   function pkgSummary(pr){
     if(!pr.pkgKeys||!pr.pkgKeys.length)return'No packages';
@@ -2153,8 +2481,9 @@ function renderSidebar(){
     const pr=ST.projects[pid];
     const isActive=ST.activeProject===pid;
     const prog=projProgress(pr);
-    const dot=STATUS_DOT[pr.status]||'#8A90A0';
+    const dot=STATUS_DOT[pr.status]||'#D3D2D0';
     const wrap=document.createElement('div');
+    wrap.className='proj-card'+(isActive?' active':'')+(archived?' archived':'');
 
     const btn=document.createElement('button');
     btn.className='nav-btn'+(isActive?' active':'');
@@ -2168,7 +2497,8 @@ function renderSidebar(){
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:var(--fs-sb-project);letter-spacing:.01em;color:${nameColor}">${escHtml(pr.customer)}</span>
         <span style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.3);flex-shrink:0">${prog.pct}%</span>
       </div>
-      <div style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.35);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:19px">${escHtml(pkgSummary(pr))}${archived?' · archived':''}</div>`;
+      <div style="font-size:var(--fs-sb-small);color:rgba(255,255,255,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:19px">${escHtml(pkgSummary(pr))}${archived?' · archived':''}</div>
+      <div class="pc-bar"><div class="pc-fill" style="width:${prog.pct||0}%"></div></div>`;
     btn.onclick=()=>{
       if(isActive){ showView('dashboard'); }   // already active: just go to its dashboard
       else { setActiveProject(pid); }
@@ -2178,7 +2508,7 @@ function renderSidebar(){
     // Nested packages+phases when active
     if(isActive){
       const nest=document.createElement('div');
-      nest.style.cssText='margin:2px 0 6px';
+      nest.className='pc-nest';
       nest.appendChild(packageNodes(pr));
       wrap.appendChild(nest);
     }
@@ -2262,19 +2592,19 @@ function renderDashboard(){
   strip.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-bottom:4px;align-items:center';
   // Project-level tools sit FIRST — Kickoff (pre-project) then Summary (ongoing)
   const koBtn=document.createElement('button');
-  const koCol='#0891B2';
+  const koCol='var(--tool)';
   koBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${kickoffMode?koCol:'var(--border)'};background:${kickoffMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${kickoffMode?'600':'400'};color:${kickoffMode?koCol:'var(--text2)'};transition:all .12s`;
   koBtn.innerHTML='<span style="font-size:13px;line-height:1">📞</span> Kickoff';
   koBtn.onclick=()=>{kickoffMode=true;summaryMode=false;notesMode=false;kickoffEdit=false;renderDashboard()};
   strip.appendChild(koBtn);
   const sumBtn=document.createElement('button');
-  const sumCol='#7C3AED';
+  const sumCol='var(--tool)';
   sumBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${summaryMode?sumCol:'var(--border)'};background:${summaryMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${summaryMode?'600':'400'};color:${summaryMode?sumCol:'var(--text2)'};transition:all .12s`;
   sumBtn.innerHTML='<span style="font-size:13px;line-height:1">📝</span> Summary';
   sumBtn.onclick=()=>{summaryMode=true;kickoffMode=false;notesMode=false;renderDashboard()};
   strip.appendChild(sumBtn);
   const pnBtn=document.createElement('button');
-  const pnCol='#059669';
+  const pnCol='var(--tool)';
   pnBtn.style.cssText=`display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${notesMode?pnCol:'var(--border)'};background:${notesMode?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${notesMode?'600':'400'};color:${notesMode?pnCol:'var(--text2)'};transition:all .12s`;
   pnBtn.innerHTML='<span style="font-size:13px;line-height:1">📒</span> Notes';
   pnBtn.onclick=()=>{notesMode=true;kickoffMode=false;summaryMode=false;renderDashboard()};
@@ -2312,7 +2642,7 @@ function renderDashboard(){
     };
     const col=PKG_COLORS[k]||'#555';const bg=PKG_BGS[k]||'#f5f5f5';
     const active=(pkgKey===k)&&!kickoffMode&&!summaryMode&&!notesMode;
-    btn.style.cssText=`display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${active?col:'var(--border)'};background:${active?bg:'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${active?'600':'400'};color:${active?col:'var(--text2)'};transition:all .12s`;
+    btn.style.cssText=`display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:var(--radius-lg);border:1.5px solid ${active?col:'var(--border)'};background:${active?'var(--blue-lt)':'var(--surface)'};cursor:pointer;font-size:var(--fs-main-body);font-weight:${active?'700':'400'};color:${active?'var(--text)':'var(--text2)'};transition:all .12s`;
     btn.innerHTML=`<span style="font-size:10px;font-weight:700;padding:1px 5px;background:${bg};color:${col};border-radius:3px">${escHtml(PKG_ABBR[k]||p.label.slice(0,4).toUpperCase())}</span>${escHtml(p.label)}`;
     btn.onclick=()=>setPkg(k);
     strip.appendChild(btn);
@@ -2379,7 +2709,7 @@ function renderDashboard(){
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('stats-grid').innerHTML=`
     <div class="stat-card"><div class="stat-n">${done}</div><div class="stat-l">Tasks done</div></div>
-    <div class="stat-card"><div class="stat-n" style="color:var(--warn-ln)">${inprog}</div><div class="stat-l">In progress</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--warn-fg)">${inprog}</div><div class="stat-l">In progress</div></div>
     <div class="stat-card"><div class="stat-n">${total-done-inprog}</div><div class="stat-l">Not started</div></div>
     <div class="stat-card"><div class="stat-n">${pkg.phases.length}</div><div class="stat-l">Phases</div></div>
     <div class="stat-card"><div class="stat-n">${pct}%</div><div class="stat-l">Complete</div></div>`;
@@ -2470,7 +2800,7 @@ function renderDashboard(){
         let tpH='';
         if(tpts.length){
           const covered=tpts.filter(x=>x.done).length;
-          tpH+='<div class="talk-hd">🗣 Cover with the customer <span class="talk-count">'+covered+'/'+tpts.length+' covered</span></div>';
+          tpH+='<div class="talk-hd">🗣 Cover with the customer <span class="talk-count">'+covered+'/'+tpts.length+' covered</span>'+(isSharedPhase(pkgKey,ph.id)?'<span class="shared-tag" title="Shared across Platform & SS Xcelerate I, II and III">⇄ X I · II · III</span>':'')+'</div>';
           tpts.forEach(pt=>{
             tpH+='<div class="talk-row">'
               +'<div class="cb talk-cb'+(pt.done?' on':'')+'" onclick="tpToggle(\''+pkgKey+'\',\''+ph.id+'\',\''+pt.id+'\')"></div>'
@@ -2501,7 +2831,7 @@ function renderDashboard(){
         // ── Edit mode toolbar ──
         if(editing){
           const bar=document.createElement('div');bar.className='ref-edit-bar';
-          bar.innerHTML=`<span class="edit-label">✏ Edit mode — changes save automatically</span>`;
+          bar.innerHTML=`<span class="edit-label">✏ Edit mode — sections are shared topics: edits update every phase that uses them</span>`;
           const btnRow=document.createElement('div');btnRow.className='ref-edit-bar-btns';
           const doneBtn=document.createElement('button');doneBtn.className='btn primary sm';doneBtn.textContent='Done editing';
           doneBtn.onclick=()=>refSaveAndExit(pkgKey,ph.id);
@@ -2513,24 +2843,28 @@ function renderDashboard(){
 
         const inner=document.createElement('div');inner.style.padding='13px 15px';
 
+        const _use=topicUsage();
         // ── EDIT MODE ──
         if(editing){
           ref.sections?.forEach((sec,si)=>{
+            const _n=(_use[sec.id]||[]).length;
             const s=document.createElement('div');s.className='ref-section editable';
             // Section header with label input and delete
             const shRow=document.createElement('div');shRow.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:7px';
             const lbl=document.createElement('input');lbl.type='text';lbl.className='ref-sec-label-input';
             lbl.id='re-lbl-'+si;lbl.value=sec.label;lbl.placeholder='Section heading';
-            lbl.oninput=()=>{sec.label=lbl.value};
-            const delSecBtn=document.createElement('button');delSecBtn.className='sec-del-btn';delSecBtn.textContent='✕ Remove section';
+            lbl.oninput=()=>{sec.label=lbl.value;save()};
+            const delSecBtn=document.createElement('button');delSecBtn.className='sec-del-btn';delSecBtn.textContent='✕ Unlink';
+            delSecBtn.title='Remove from this phase only — the topic stays in the Reference Library';
             delSecBtn.onclick=()=>refDelSection(pkgKey,ph.id,si);
             shRow.appendChild(lbl);shRow.appendChild(delSecBtn);s.appendChild(shRow);
+            if(_n>1){const w=document.createElement('div');w.className='ref-shared-warn';w.textContent='⇄ Shared topic — used in '+_n+' phases. Edits here apply to all of them.';s.appendChild(w)}
             // Items
             sec.items.forEach((item,ii)=>{
               const row=document.createElement('div');row.className='ref-item-row';
               const inp=document.createElement('textarea');inp.className='ref-item-input';
               inp.id='re-item-'+si+'-'+ii;inp.value=item;inp.rows=2;inp.placeholder='Reference point...';
-              inp.oninput=()=>{sec.items[ii]=inp.value};
+              inp.oninput=()=>{sec.items[ii]=inp.value;save()};
               const delBtn=document.createElement('button');delBtn.className='del-icon';delBtn.title='Remove item';
               delBtn.innerHTML='<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
               delBtn.onclick=()=>refDelItem(pkgKey,ph.id,si,ii);
@@ -2547,6 +2881,17 @@ function renderDashboard(){
           addSec.textContent='+ Add new section';
           addSec.onclick=()=>refAddSection(pkgKey,ph.id);
           inner.appendChild(addSec);
+          // Link an existing Library topic
+          const T=topicsStore();const inPhase=new Set(ref.sections.map(x=>x.id));
+          const avail=Object.values(T).filter(t=>!inPhase.has(t.id)).sort((a,b)=>a.label.localeCompare(b.label));
+          if(avail.length){
+            const lr=document.createElement('div');lr.className='ref-link-row';
+            const sel=document.createElement('select');sel.className='ref-link-sel';
+            sel.innerHTML='<option value="">Link a topic from the Reference Library…</option>'+avail.map(t=>'<option value="'+escHtml(t.id)+'">'+escHtml(t.label)+' ('+(_use[t.id]||[]).length+' phases)</option>').join('');
+            const lb=document.createElement('button');lb.className='btn sm';lb.textContent='+ Link';
+            lb.onclick=()=>refLinkTopic(pkgKey,ph.id,sel.value);
+            lr.appendChild(sel);lr.appendChild(lb);inner.appendChild(lr);
+          }
 
         // ── VIEW MODE ──
         } else {
@@ -2557,7 +2902,7 @@ function renderDashboard(){
           editToggle.style.cssText='font-size:10px;padding:2px 8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:none;color:var(--text3);cursor:pointer';
           editToggle.textContent='✏ Edit reference';
           editToggle.onclick=()=>{setRefEditing(pkgKey,ph.id,true);renderDashboard()};
-          const hasOverride=!!ST.refGlobal[refKey(pkgKey,ph.id)];
+          const hasOverride=refDiffersFromBuiltin(pkgKey,ph.id);
           if(hasOverride){
             const badge=document.createElement('span');
             badge.style.cssText='font-size:9px;margin-left:5px;padding:1px 5px;background:var(--blue-lt);color:var(--navy);border-radius:10px;font-weight:600';
@@ -2570,7 +2915,8 @@ function renderDashboard(){
             s.id='refsec-'+ph.id+'-'+_si;
             const secHdr=document.createElement('div');
             secHdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--border)';
-            secHdr.innerHTML=`<div class="ref-label" style="border-bottom:none;margin-bottom:0;padding-bottom:0">${escHtml(sec.label)}</div>`;
+            const _n=(_use[sec.id]||[]).length;
+            secHdr.innerHTML=`<div class="ref-label" style="border-bottom:none;margin-bottom:0;padding-bottom:0">${escHtml(sec.label)}</div>`+(_n>1?`<button class="ref-shared" title="Shared topic — open in the Reference Library" onclick="openLibraryTopic('${escHtml(sec.id)}')">⇄ shared · ${_n} phases</button>`:'');
             s.appendChild(secHdr);
             sec.items.forEach(item=>{
               if(!item.trim())return;
@@ -2767,6 +3113,11 @@ function openNewPkg(){
 function openEditPkg(k){
   const p=ST.userPkgs[k];if(!p)return;
   pkgModalData={isNew:false,key:k,pkg:JSON.parse(JSON.stringify(p))};
+  // Show the CURRENT shared-topic content, carrying topic ids so saves update the topics
+  pkgModalData.pkg.phases.forEach(ph=>{
+    const r=getRef(k,ph.id);
+    ph.ref={sections:r.sections.map(x=>({id:x.id,label:x.label,items:x.items.slice()})),tips:JSON.parse(JSON.stringify(r.tips)),docs:JSON.parse(JSON.stringify(r.docs))};
+  });
   document.getElementById('pkg-modal-title').textContent='Edit Package — '+p.label;
   renderPkgModal();
   document.getElementById('pkg-modal').classList.remove('hidden');
@@ -2853,9 +3204,21 @@ function savePkgModal(){
   syncPkgModalFields();
   const label=pkgModalData.pkg.label;
   if(!label){alert('Package name is required');return}
-  const key=pkgModalData.isNew?('custom_'+Date.now()):pkgModalData.key;
+  const key=pkgModalData.isNew?('custom_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)):pkgModalData.key;
+  const T=topicsStore();
+  // Write each phase's reference through to the shared topics, then store a plain copy in the package
+  pkgModalData.pkg.phases.forEach(ph=>{
+    const r=ph.ref||{sections:[],tips:[],docs:[]};
+    const sections=(r.sections||[]).map(sec=>{
+      if(sec.id&&T[sec.id]){T[sec.id].label=sec.label;T[sec.id].items=(sec.items||[]).map(String);return{topic:sec.id}}
+      return{topic:findOrCreateTopic(sec.label,sec.items)};
+    });
+    ST.refGlobal[refKey(key,ph.id)]={sections,tips:JSON.parse(JSON.stringify(r.tips||[])),docs:JSON.parse(JSON.stringify(r.docs||[]))};
+    ph.ref={sections:(r.sections||[]).map(x=>({label:x.label,items:x.items.slice()})),tips:r.tips||[],docs:r.docs||[]};
+  });
+  const wasNew=pkgModalData.isNew;
   ST.userPkgs[key]=pkgModalData.pkg;
-  save();closePkgModal();renderAll();showToast(pkgModalData.isNew?'Package created':'Package updated');
+  save();closePkgModal();renderAll();showToast(wasNew?'Package created':'Package updated');
 }
 
 // ── Phase Modal ──
@@ -3037,8 +3400,8 @@ function abPayload(){
   return JSON.stringify({
     version:3,autoBackup:true,saved:new Date().toISOString(),
     userPkgs:ST.userPkgs,projects:ST.projects,activeProject:ST.activeProject,
-    prereqs:ST.prereqs,toolbox:ST.toolbox,refGlobal:ST.refGlobal,
-    notesGlobal:ST.notesGlobal,talkGlobal:ST.talkGlobal,covGlobal:ST.covGlobal
+    prereqs:ST.prereqs,toolbox:ST.toolbox,refGlobal:ST.refGlobal,refTopics:ST.refTopics,
+    notesGlobal:ST.notesGlobal,talkGlobal:ST.talkGlobal,covGlobal:ST.covGlobal,uiTheme:ST.uiTheme,onenoteLink:ST.onenoteLink
   },null,1);
 }
 async function abWriteNow(){
@@ -3095,9 +3458,12 @@ async function abInit(){
           if(data.prereqs)ST.prereqs=data.prereqs;
           if(Array.isArray(data.toolbox))ST.toolbox=data.toolbox;
           if(data.refGlobal)ST.refGlobal=data.refGlobal;
+          if(data.refTopics)ST.refTopics=data.refTopics;
           if(data.notesGlobal)ST.notesGlobal=data.notesGlobal;
           if(data.talkGlobal)ST.talkGlobal=data.talkGlobal;
           if(data.covGlobal)ST.covGlobal=data.covGlobal;
+          if(data.uiTheme){ST.uiTheme=data.uiTheme;applyTheme(data.uiTheme)}
+          if(data.onenoteLink){const l=parseOneNoteLink((data.onenoteLink.web||'')+' '+(data.onenoteLink.desk||''));if(l)ST.onenoteLink=l}
           save();renderAll();showToast('Restored from auto-backup file');
         }
       }
@@ -3145,6 +3511,8 @@ function migrateSharedKnowledge(){
   if(moved)save();
 }
 migrateSharedKnowledge();
+mergeSharedCoverage();
+migrateRefTopics();
 
 renderAll();
 applyTheme(getTheme());
@@ -3153,14 +3521,19 @@ abInit();
 if(!activeProj())showView('overview');
 
 // ── Theme ──
-function getTheme(){return localStorage.getItem('delinea_theme')||'auto'}
+function getTheme(){let t=null;try{t=localStorage.getItem('delinea_theme')}catch(e){}return t||(typeof ST!=='undefined'&&ST.uiTheme)||'auto'}
 function applyTheme(t){
   const root=document.documentElement;
-  const icon=document.getElementById('theme-icon');
-  const lbl=document.getElementById('theme-label');
-  if(t==='light'){root.setAttribute('data-theme','light');if(icon)icon.textContent='🌙';if(lbl)lbl.textContent='Dark mode'}
-  else if(t==='dark'){root.setAttribute('data-theme','dark');if(icon)icon.textContent='☀';if(lbl)lbl.textContent='Light mode'}
-  else{root.removeAttribute('data-theme');const prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;if(icon)icon.textContent=prefersDark?'☀':'🌙';if(lbl)lbl.textContent=prefersDark?'Light mode':'Dark mode'}
+  if(t==='light')root.setAttribute('data-theme','light');
+  else if(t==='dark')root.setAttribute('data-theme','dark');
+  else root.removeAttribute('data-theme');
+  document.querySelectorAll('#theme-seg button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+}
+function setTheme(t){
+  try{localStorage.setItem('delinea_theme',t)}catch(e){}
+  ST.uiTheme=t;save();          // also kept in dashboard data so auto-backup / export carry it
+  applyTheme(t);
+  showToast(t==='auto'?'Theme follows your system setting':(t==='dark'?'Dark':'Light')+' theme set as default');
 }
 function toggleTheme(){
   const t=getTheme();
